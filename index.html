@@ -273,7 +273,20 @@ tr:hover td{background:#F6F8F9}
 .pinlab{position:absolute;left:26px;top:50%;transform:translateY(-50%);background:rgba(14,21,28,.9);color:#fff;font-size:10.5px;font-weight:600;padding:2px 6px;border-radius:2px;white-space:nowrap;pointer-events:none}
 .pinedit{padding:10px 14px;border-top:1px solid var(--line);background:#FFF9DE}
 
-@media(max-width:900px){.reader{grid-template-columns:1fr}.toc{position:static;max-height:none}.stagetabs{overflow-x:auto}.planbar{overflow-x:auto;flex-wrap:nowrap}.tool{white-space:nowrap}.planstage{max-height:50vh}.stagetabs button{min-width:150px}.sheet.wide{max-width:100%}.brow{flex-wrap:wrap}.split{grid-template-columns:1fr}.board{grid-template-columns:repeat(6,minmax(165px,1fr))}.f3,.f2{grid-template-columns:1fr}}
+
+/* board filters */
+.filters{border:1px solid var(--line);border-radius:3px;background:#F6F8F9;padding:9px 11px;margin-bottom:12px;display:flex;flex-direction:column;gap:8px}
+.frow{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.flabel{font-family:'Barlow Condensed';font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--mute);font-weight:600;width:56px;flex:none}
+.chips{display:flex;gap:5px;flex-wrap:wrap;flex:1}
+.chip{background:#fff;border:1px solid var(--line);border-radius:2px;padding:4px 9px;font-size:11.5px;font-weight:600;color:#46545F;display:flex;align-items:center;gap:5px}
+.chip b{font-family:'JetBrains Mono';font-size:10px;font-weight:700;color:var(--mute)}
+.chip:hover{border-color:var(--water);color:var(--ink)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip.on b{color:var(--hiviz)}
+.chip.on.al{background:var(--alarm);border-color:var(--alarm)}
+
+@media(max-width:900px){.reader{grid-template-columns:1fr}.toc{position:static;max-height:none}.stagetabs{overflow-x:auto}.flabel{width:auto}.chips{overflow-x:auto;flex-wrap:nowrap}.chip{white-space:nowrap}.planbar{overflow-x:auto;flex-wrap:nowrap}.tool{white-space:nowrap}.planstage{max-height:50vh}.stagetabs button{min-width:150px}.sheet.wide{max-width:100%}.brow{flex-wrap:wrap}.split{grid-template-columns:1fr}.board{grid-template-columns:repeat(6,minmax(165px,1fr))}.f3,.f2{grid-template-columns:1fr}}
 @media print{header.top,nav.tabs,.btn,.bar{display:none!important}#root{background:#fff}}
 </style>
 
@@ -868,13 +881,39 @@ function Gate({g}){
 /* ---------------- board ---------------- */
 function Board({A,move,onOpen,go}){
   const [over,setOver]=useState(null);
+  const [vt,setVt]=useState([]);        // selected verticals — empty = all
+  const [mk,setMk]=useState('');        // market
+  const [q,setQ]=useState('');
+  const [only,setOnly]=useState(false); // only show what's past cadence
+
   const stale=a=>daysSince(a.last)>CADENCE[a.stage];
-  const counts=STAGES.map(s=>A.filter(a=>a.stage===s.id).length);
-  const staleN=A.filter(stale).length;
+
+  // what's actually on the board, so we don't show filters for verticals nobody has
+  const vCounts=useMemo(()=>{
+    const m={}; A.forEach(a=>{m[a.vertical]=(m[a.vertical]||0)+1;});
+    return VERTICALS.filter(v=>m[v]).map(v=>[v,m[v]]);
+  },[A]);
+  const mCounts=useMemo(()=>{
+    const m={}; A.forEach(a=>{m[a.market]=(m[a.market]||0)+1;});
+    return MARKETS.filter(v=>m[v]).map(v=>[v,m[v]]);
+  },[A]);
+
+  const F=useMemo(()=>A.filter(a=>
+    (!vt.length||vt.includes(a.vertical)) &&
+    (!mk||a.market===mk) &&
+    (!only||stale(a)) &&
+    (!q||`${a.name} ${a.contact} ${a.notes}`.toLowerCase().includes(q.toLowerCase()))
+  ),[A,vt,mk,only,q]);
+
+  const counts=STAGES.map(s=>F.filter(a=>a.stage===s.id).length);
+  const staleN=F.filter(stale).length;
+  const filtered = vt.length||mk||only||q;
+  const toggleV=v=>setVt(p=>p.includes(v)?p.filter(x=>x!==v):[...p,v]);
+  const clear=()=>{setVt([]);setMk('');setQ('');setOnly(false);};
 
   return <div className="grid">
     <div className="kpis">
-      <Kpi lab="Accounts" val={A.length} sub="in the system"/>
+      <Kpi lab={filtered?'Accounts shown':'Accounts'} val={F.length} sub={filtered?`of ${A.length} on the board`:'in the system'}/>
       <Kpi lab="Opportunities (A)" val={counts[2]} sub="signable in 100 days" cls="hz"/>
       <Kpi lab="Signed clients" val={counts[4]+counts[5]} sub={`${counts[5]} VIP · ${counts[4]} Priority`} cls="go"/>
       <Kpi lab="Past cadence" val={staleN} sub="need a touch now" cls={staleN?'al':''}/>
@@ -883,9 +922,39 @@ function Board({A,move,onOpen,go}){
     <div className="card">
       <h3>Response board <span className="hint" style={{fontWeight:400,textTransform:'none',letterSpacing:0,fontFamily:'Inter'}}>— drag an account to move it a rung. Click to open.</span></h3>
       <div className="body">
+
+        {A.length>0 && <div className="filters">
+          <div className="frow">
+            <span className="flabel">Vertical</span>
+            <div className="chips">
+              <button className={'chip'+(!vt.length?' on':'')} onClick={()=>setVt([])}>All <b>{A.length}</b></button>
+              {vCounts.map(([v,n])=><button key={v} className={'chip'+(vt.includes(v)?' on':'')} onClick={()=>toggleV(v)}>
+                {v.replace(' / ',' / ').replace(' Mgmt','')} <b>{n}</b>
+              </button>)}
+            </div>
+          </div>
+
+          <div className="frow">
+            <span className="flabel">Market</span>
+            <div className="chips">
+              <button className={'chip'+(!mk?' on':'')} onClick={()=>setMk('')}>All</button>
+              {mCounts.map(([m,n])=><button key={m} className={'chip'+(mk===m?' on':'')} onClick={()=>setMk(mk===m?'':m)}>
+                {m.split(' /')[0]} <b>{n}</b>
+              </button>)}
+            </div>
+          </div>
+
+          <div className="frow">
+            <input placeholder="Search the board…" value={q} onChange={e=>setQ(e.target.value)} style={{maxWidth:240}}/>
+            <button className={'chip'+(only?' on al':'')} onClick={()=>setOnly(!only)}>Past cadence only</button>
+            {filtered && <button className="plink" onClick={clear}>Clear filters</button>}
+            {filtered && <span className="hint" style={{marginLeft:'auto'}}>Showing {F.length} of {A.length}</span>}
+          </div>
+        </div>}
+
         <div className="board">
           {STAGES.map(s=>{
-            const list=A.filter(a=>a.stage===s.id);
+            const list=F.filter(a=>a.stage===s.id);
             return <div key={s.id}
               className={'col'+(over===s.id?' over':'')}
               onDragOver={e=>{e.preventDefault();setOver(s.id);}}
@@ -895,7 +964,7 @@ function Board({A,move,onOpen,go}){
                 <span>{s.name}</span><span className="n">{list.length}</span>
               </div>
               <div className="colbody">
-                {list.map(a=>{
+                {list.slice(0,60).map(a=>{
                   const d=daysSince(a.last);
                   const over_=d>CADENCE[a.stage];
                   const cls=!a.last?'':over_?(d>CADENCE[a.stage]*2?'hot':'stale'):'fresh';
@@ -910,12 +979,18 @@ function Board({A,move,onOpen,go}){
                     </div>
                   </div>;
                 })}
-                {!list.length && <div style={{fontSize:11,color:'#8494A0',padding:'10px 4px',lineHeight:1.4}}>{s.def}</div>}
+                {list.length>60 && <div className="hint" style={{padding:'6px 4px',textAlign:'center'}}>
+                  +{list.length-60} more — filter, or use the Accounts tab
+                </div>}
+                {!list.length && <div style={{fontSize:11,color:'#8494A0',padding:'10px 4px',lineHeight:1.4}}>
+                  {filtered? 'Nothing here matches the filter.' : s.def}
+                </div>}
                 <button className="plink" style={{marginTop:'auto',paddingTop:6,textAlign:'left'}} onClick={()=>go(STAGE_HELP[s.id])}>What to do at this stage →</button>
               </div>
             </div>;
           })}
         </div>
+
         {!A.length && <div className="empty" style={{padding:'22px 16px'}}>
           <b>The board is empty</b>
           Add an account, or bring the whole target list in at once with <b>Import list</b> at the top right.
