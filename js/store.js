@@ -173,6 +173,200 @@
     // Local mode only: persist the whole document.
     saveLocal(db) { if (!REMOTE) local.write(db); },
 
+    /* ---------- jobs ---------- */
+
+    async loadJobs() {
+      if (!REMOTE) {
+        try { const r = localStorage.getItem('teamallied_jobs'); return r ? JSON.parse(r) : []; }
+        catch { return []; }
+      }
+      const { data, error } = await sb.from('jobs').select('payload').order('updated_at', {ascending:false});
+      if (error) { console.error('Could not load jobs:', error.message); return []; }
+      return (data || []).map(r => r.payload);
+    },
+
+    async saveJob(j) {
+      if (!REMOTE) return;
+      queue('job:' + j.id, async () => {
+        const { error } = await sb.from('jobs')
+          .upsert({ id: j.id, account_id: j.acctId, building_id: j.bldgId || null, payload: j });
+        if (error) console.error('Could not save the job', error.message);
+      });
+    },
+
+    async deleteJob(id) {
+      if (!REMOTE) return;
+      clearTimeout(pending.get('job:' + id)); pending.delete('job:' + id);
+      const { error } = await sb.from('jobs').delete().eq('id', id);
+      if (error) console.error('Could not delete the job:', error.message);
+    },
+
+    saveJobsLocal(list) {
+      if (REMOTE) return;
+      try { localStorage.setItem('teamallied_jobs', JSON.stringify(list)); } catch {}
+    },
+
+    /* ---------- documents ----------
+       Invoices, Xactimate estimates, receipts, signed authorizations. Any
+       file type, up to 25MB. Images get downscaled; everything else goes up
+       as-is, because a compressed PDF invoice is a useless PDF invoice. */
+
+    async uploadDoc(file, meta = {}) {
+      if (!file) throw new Error('No file selected.');
+      if (file.size > 25 * 1024 * 1024) throw new Error(`${file.name} is over 25MB. Compress it or split it.`);
+
+      const isImg = /^image\//.test(file.type);
+
+      if (!REMOTE) {
+        if (!isImg) throw new Error('Storing documents needs the shared board. Connect Supabase first.');
+        const small = await downscale(file, 1000, 0.55);
+        return { kind:'inline', name:file.name, url: await toDataURL(small), at:new Date().toISOString() };
+      }
+
+      const body = isImg ? await downscale(file, 1900, 0.8) : file;
+      const safe = s => String(s || 'x').replace(/[^a-z0-9.]+/gi,'-').toLowerCase().slice(0,60);
+      const path = `${safe(meta.acct)}/${safe(meta.job || 'job')}/${Date.now()}-${safe(file.name)}`;
+
+      const { error } = await sb.storage.from('job-docs')
+        .upload(path, body, { contentType: isImg ? 'image/jpeg' : (file.type || 'application/octet-stream') });
+      if (error) throw new Error('Upload failed: ' + error.message);
+
+      return {
+        kind: 'doc', path, name: file.name,
+        mime: isImg ? 'image/jpeg' : (file.type || ''),
+        size: body.size || file.size,
+        img: isImg,
+        at: new Date().toISOString(), by: user.email
+      };
+    },
+
+    async docURL(d) {
+      if (!d) return '';
+      if (d.kind === 'inline') return d.url;
+      if (!REMOTE || !d.path) return '';
+      const { data, error } = await sb.storage.from('job-docs').createSignedUrl(d.path, 3600);
+      return error ? '' : data.signedUrl;
+    },
+
+    async deleteDoc(d) {
+      if (!d || d.kind !== 'doc' || !REMOTE) return;
+      await sb.storage.from('job-docs').remove([d.path]);
+    },
+
+    /* ---------- vendor directory ---------- */
+    /* One record per vendor company. Buildings link to them by id. */
+
+    async loadVendors() {
+      if (!REMOTE) {
+        try { const r = localStorage.getItem('teamallied_vendors'); return r ? JSON.parse(r) : []; }
+        catch { return []; }
+      }
+      const { data, error } = await sb.from('vendors').select('payload').order('updated_at', {ascending:false});
+      if (error) { console.error('Could not load vendors:', error.message); return []; }
+      return (data || []).map(r => r.payload);
+    },
+
+    async saveVendor(v) {
+      if (!REMOTE) return;
+      queue('vendor:' + v.id, async () => {
+        const { error } = await sb.from('vendors').upsert({ id: v.id, payload: v });
+        if (error) console.error('Could not save vendor', v.name, error.message);
+      });
+    },
+
+    async saveVendors(list) {
+      if (!REMOTE || !list.length) return;
+      const rows = list.map(v => ({ id: v.id, payload: v }));
+      const { error } = await sb.from('vendors').upsert(rows);
+      if (error) throw new Error('Could not save the vendors: ' + error.message);
+    },
+
+    async deleteVendor(id) {
+      if (!REMOTE) return;
+      clearTimeout(pending.get('vendor:' + id)); pending.delete('vendor:' + id);
+      const { error } = await sb.from('vendors').delete().eq('id', id);
+      if (error) console.error('Could not delete vendor:', error.message);
+    },
+
+    saveVendorsLocal(list) {
+      if (REMOTE) return;
+      try { localStorage.setItem('teamallied_vendors', JSON.stringify(list)); } catch {}
+    },
+
+    /* ---------- client portal ---------- */
+
+    /* Create a link we can send a property manager. The token is long and
+       random (it's the actual lock); the code is short enough to say over
+       the phone. Both are needed to open the page. */
+    async createShare(acct, bldg, days = 30) {
+      if (!REMOTE) throw new Error('Client links need the shared board. Connect Supabase first.');
+      const rnd = n => {
+        const a = new Uint8Array(n); crypto.getRandomValues(a);
+        return Array.from(a, b => b.toString(36).padStart(2,'0')).join('').slice(0,n);
+      };
+      // no 0/O/1/I — these get read aloud and written down
+      const ALPHA = 'ACDEFGHJKLMNPQRTUVWXY34679';
+      const code = Array.from(crypto.getRandomValues(new Uint8Array(6)))
+                        .map(b => ALPHA[b % ALPHA.length]).join('');
+      const token = rnd(32);
+
+      const { error } = await sb.from('shares').insert({
+        token, code,
+        account_id: acct.id,
+        building_id: bldg.id,
+        label: bldg.name || 'Building profile',
+        created_by: user.email,
+        expires_at: days ? new Date(Date.now() + days*864e5).toISOString() : null
+      });
+      if (error) throw new Error('Could not create the link: ' + error.message);
+
+      const base = location.origin + location.pathname.replace(/[^/]*$/, '');
+      return { token, code, url: `${base}building.html?t=${token}` };
+    },
+
+    async listShares(buildingId) {
+      if (!REMOTE) return [];
+      const { data, error } = await sb.from('shares')
+        .select('*').eq('building_id', buildingId).order('created_at', {ascending:false});
+      if (error) return [];
+      return data || [];
+    },
+
+    async revokeShare(token) {
+      if (!REMOTE) return;
+      await sb.from('shares').update({ revoked: true }).eq('token', token);
+    },
+
+    /* What clients have sent back and we haven't looked at yet. */
+    async pendingSubmissions() {
+      if (!REMOTE) return [];
+      const { data, error } = await sb.from('submissions')
+        .select('*').eq('status','pending').order('created_at', {ascending:false});
+      if (error) { console.error(error.message); return []; }
+      return data || [];
+    },
+
+    async reviewSubmission(id, status) {
+      if (!REMOTE) return;
+      const { error } = await sb.from('submissions')
+        .update({ status, reviewed_by: user.email, reviewed_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw new Error(error.message);
+    },
+
+    /* Move a client's photo out of the write-only client bucket and into
+       the real one, so it prints on the plan like any other. */
+    async adoptPhoto(p) {
+      if (!REMOTE || !p || p.kind !== 'client') return p;
+      const { data, error } = await sb.storage.from('client-uploads').download(p.path);
+      if (error) return p;                       // leave it; better than losing the record
+      const path = `client/${Date.now()}-${p.path}`;
+      const up = await sb.storage.from('arp-photos').upload(path, data, {contentType:'image/jpeg'});
+      if (up.error) return p;
+      await sb.storage.from('client-uploads').remove([p.path]);
+      return { kind:'path', path, at:p.at, by:'client' };
+    },
+
     /* ---------- photos ---------- */
 
     /* Upload a photo of a shutoff (or anything else). Returns a record
