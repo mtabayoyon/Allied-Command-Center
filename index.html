@@ -1241,16 +1241,18 @@ function parseCSV(text){
 }
 
 const FIELDS=[
-  {k:'name',    t:'Company',        req:true,  hints:['company','account','business','organization','name','firm','client','dba']},
-  {k:'contact', t:'Contact',        hints:['contact','first','full name','decision','owner','manager name','poc','person']},
-  {k:'title',   t:'Title',          hints:['title','role','position','job']},
-  {k:'phone',   t:'Phone',          hints:['phone','tel','mobile','cell','number','direct']},
+  {k:'name',    t:'Company',        req:true,  hints:['company name','company','account name','organization','business','account','firm','employer','dba']},
+  {k:'first',   t:'First name',     hints:['first name','first','fname','given']},
+  {k:'last',    t:'Last name',      hints:['last name','last','lname','surname','family']},
+  {k:'contact', t:'Full name',      note:'only if first/last are one column', hints:['full name','contact name','contact','name','poc','decision maker']},
+  {k:'title',   t:'Title',          hints:['job title','title','role','position']},
+  {k:'phone',   t:'Phone',          hints:['phone number','phone','mobile','cell','direct','tel','office number']},
   {k:'email',   t:'Email',          hints:['email','e-mail','mail']},
-  {k:'vertical',t:'Vertical',       hints:['vertical','type','industry','category','segment']},
-  {k:'market',  t:'Market',         hints:['market','city','region','territory','area','location','town']},
-  {k:'doors',   t:'Buildings',      hints:['building','doors','units','properties','portfolio','sites','count']},
-  {k:'stage',   t:'Stage',          hints:['stage','status','lifecycle']},
-  {k:'notes',   t:'Notes',          hints:['note','comment','detail','description','source','address','street']},
+  {k:'vertical',t:'Vertical',       hints:['industry','vertical','type','category','segment','sector']},
+  {k:'market',  t:'Market',         hints:['city','market','region','territory','area','town','metro']},
+  {k:'doors',   t:'Buildings',      hints:['buildings','doors','units','properties','portfolio','sites','number of']},
+  {k:'stage',   t:'Stage',          hints:['stage','status','lifecycle stage']},
+  {k:'notes',   t:'Notes',          hints:['notes','note','comment','description','street address','address','source','website']},
 ];
 
 /* Guess which column is which. Beats making someone map 10 dropdowns. */
@@ -1329,38 +1331,85 @@ function Importer({A,onImport,onClose}){
   const head = rows? (hasHead? rows[0].map(h=>String(h).trim()) : rows[0].map((_,i)=>`Column ${i+1}`)) : [];
   const body = rows? (hasHead? rows.slice(1) : rows) : [];
 
-  /* Build the accounts, and work out what's a duplicate of what's already on the board. */
+  /* Build the accounts. Roll several contact rows at the same company up into
+     one account: best contact becomes the decision-maker, the rest get listed
+     in the notes so nobody is lost. */
   const built=useMemo(()=>{
-    if(!rows) return {ok:[],dupe:[],bad:0};
-    const norm=x=>String(x||'').toLowerCase().replace(/[^a-z0-9]/g,'');
-    const existing=new Map(A.map(a=>[norm(a.name),a]));
-    const seen=new Set();
-    const ok=[],dupe=[]; let bad=0;
+    if(!rows) return {ok:[],dupe:[],bad:0,rolled:0};
+    const norm=x=>String(x||'').toLowerCase().replace(/\b(inc|llc|corp|co|ltd|the|company|group)\b/g,'').replace(/[^a-z0-9]/g,'');
+    const existing=new Set(A.map(a=>norm(a.name)));
     const get=(r,k)=>map[k]!=null? String(r[map[k]]??'').trim() : '';
 
+    // A contact with a title that sounds like a decision-maker outranks one without.
+    const rank=t=>{
+      const s=String(t||'').toLowerCase();
+      if(/owner|principal|president|founder|ceo|managing/.test(s)) return 5;
+      if(/director|vp|vice president|head of/.test(s)) return 4;
+      if(/property manager|community manager|facilit|general manager/.test(s)) return 3;
+      if(/manager|supervisor/.test(s)) return 2;
+      if(/assistant|coordinator|admin/.test(s)) return 1;
+      return 0;
+    };
+
+    const groups=new Map(); let bad=0, rowCount=0;
+
     body.forEach(r=>{
-      const name=get(r,'name');
-      if(!name){ bad++; return; }
-      const key=norm(name);
-      const rec={
-        id:uid(), name,
-        contact:get(r,'contact'), title:get(r,'title'),
-        phone:get(r,'phone'), email:get(r,'email'),
-        vertical: guessVertical(get(r,'vertical')) || guessVertical(name) || nearest(get(r,'vertical'),VERTICALS) || defVert,
-        market:   guessMarket(get(r,'market')) || guessMarket(get(r,'notes')) || defMarket,
-        stage:    (STAGES.find(s=>s.name.toLowerCase()===get(r,'stage').toLowerCase())||{}).id || 'lead',
-        doors:    parseInt(String(get(r,'doors')).replace(/[^0-9]/g,''),10)||0,
-        notes:get(r,'notes'), next:'', last:'', bldgs:[], created:today()
-      };
-      if(existing.has(key)||seen.has(key)) dupe.push(rec);
-      else { seen.add(key); ok.push(rec); }
+      const company=get(r,'name');
+      if(!company){ bad++; return; }
+      rowCount++;
+      const key=norm(company);
+
+      const first=get(r,'first'), last=get(r,'last');
+      const who=[first,last].filter(Boolean).join(' ').trim() || get(r,'contact');
+      const person={who, title:get(r,'title'), phone:get(r,'phone'), email:get(r,'email'), rank:rank(get(r,'title'))};
+
+      if(!groups.has(key)){
+        groups.set(key,{company, rows:[], people:[],
+          vertical:get(r,'vertical'), market:get(r,'market'),
+          doors:get(r,'doors'), stage:get(r,'stage'), notes:get(r,'notes')});
+      }
+      const g=groups.get(key);
+      // keep the first non-empty value for the company-level fields
+      ['vertical','market','doors','stage','notes'].forEach(k=>{ if(!g[k]) g[k]=get(r,k); });
+      if(person.who||person.phone||person.email) g.people.push(person);
     });
-    return {ok,dupe,bad};
+
+    const ok=[], dupe=[];
+    groups.forEach(g=>{
+      // best contact first
+      g.people.sort((x,y)=> y.rank-x.rank || (y.phone?1:0)-(x.phone?1:0) || (y.email?1:0)-(x.email?1:0));
+      const lead=g.people[0]||{};
+      const others=g.people.slice(1);
+
+      const extra = others.length
+        ? `Also at this company:\n` + others.map(p=>
+            `• ${p.who||'(no name)'}${p.title?` — ${p.title}`:''}${p.phone?` · ${p.phone}`:''}${p.email?` · ${p.email}`:''}`
+          ).join('\n')
+        : '';
+
+      const rec={
+        id:uid(), name:g.company,
+        contact:lead.who||'', title:lead.title||'',
+        phone:lead.phone||'', email:lead.email||'',
+        vertical: guessVertical(g.vertical) || guessVertical(g.company) || nearest(g.vertical,VERTICALS) || defVert,
+        market:   guessMarket(g.market) || guessMarket(g.notes) || defMarket,
+        stage:    (STAGES.find(st=>st.name.toLowerCase()===String(g.stage).toLowerCase())||{}).id || 'lead',
+        doors:    parseInt(String(g.doors).replace(/[^0-9]/g,''),10)||0,
+        notes:    [g.notes, extra].filter(Boolean).join('\n\n'),
+        next:'', last:'', bldgs:[], created:today(),
+        _people: g.people.length
+      };
+      if(existing.has(norm(g.company))) dupe.push(rec); else ok.push(rec);
+    });
+
+    ok.sort((x,y)=> y._people-x._people || x.name.localeCompare(y.name));
+    return {ok,dupe,bad,rolled: rowCount - (ok.length+dupe.length)};
   },[rows,map,hasHead,defMarket,defVert,A]);
 
   const commit=async()=>{
     setBusy(true);
-    await onImport(built.ok);
+    const clean=built.ok.map(({_people,...rest})=>rest);   // preview-only field
+    await onImport(clean);
     setBusy(false);
     onClose();
   };
@@ -1392,7 +1441,7 @@ function Importer({A,onImport,onClose}){
             <button className="btn sm" onClick={()=>{setStep(1);setRows(null);}}>Start over</button>
           </div>
 
-          <Sect t="Match the columns" sub="I've guessed from your headers. Fix anything that's wrong."/>
+          <Sect t="Match the columns" sub="I've guessed from your headers — fix anything that's wrong. If your file has First name and Last name as separate columns, map both and they'll be joined. Several rows at the same company roll up into one account."/>
           <div className="mapgrid">
             {FIELDS.map(f=><div key={f.k} className="fld">
               <label>{f.t}{f.req && <span style={{color:'var(--alarm)'}}> *</span>}</label>
@@ -1411,24 +1460,26 @@ function Importer({A,onImport,onClose}){
 
           <Sect t="Preview"/>
           <div className="row" style={{gap:8,marginBottom:8}}>
-            <span className="tag g">{built.ok.length} new</span>
+            <span className="tag g">{built.ok.length} companies</span>
+            {built.rolled>0 && <span className="tag w">{built.rolled} extra contact rows merged in</span>}
             {built.dupe.length>0 && <span className="tag y">{built.dupe.length} already on the board — skipped</span>}
             {built.bad>0 && <span className="tag r">{built.bad} with no company name — skipped</span>}
           </div>
           {!built.ok.length ? <div className="hint">Nothing to import. Check that the Company column is mapped to the right column.</div> :
           <div style={{overflowX:'auto',border:'1px solid var(--line)',borderRadius:3}}>
-            <table><thead><tr><th>Company</th><th>Contact</th><th>Phone</th><th>Vertical</th><th>Market</th><th>Bldgs</th></tr></thead>
-            <tbody>{built.ok.slice(0,8).map(r=><tr key={r.id}>
-              <td><b>{r.name}</b></td><td>{r.contact||<span className="hint">—</span>}</td>
+            <table><thead><tr><th>Company</th><th>Decision-maker</th><th>Phone</th><th>Vertical</th><th>Market</th><th>Contacts</th></tr></thead>
+            <tbody>{built.ok.slice(0,10).map(r=><tr key={r.id}>
+              <td><b>{r.name}</b></td>
+              <td>{r.contact||<span className="hint">—</span>}<div className="hint">{r.title}</div></td>
               <td className="mono" style={{fontSize:11.5}}>{r.phone||'—'}</td>
               <td style={{fontSize:11.5}}>{r.vertical}</td><td style={{fontSize:11.5}}>{r.market}</td>
-              <td className="mono">{r.doors||'—'}</td>
+              <td>{r._people>1? <span className="tag w">{r._people}</span> : <span className="mono">{r._people||'—'}</span>}</td>
             </tr>)}</tbody></table>
-            {built.ok.length>8 && <div className="hint" style={{padding:'7px 9px',borderTop:'1px solid var(--line)'}}>…and {built.ok.length-8} more</div>}
+            {built.ok.length>10 && <div className="hint" style={{padding:'7px 9px',borderTop:'1px solid var(--line)'}}>…and {built.ok.length-10} more</div>}
           </div>}
         </div>
         <div className="foot">
-          <span className="hint" style={{marginRight:'auto'}}>Everything lands as a <b>Lead</b>. Work them up the board from there.</span>
+          <span className="hint" style={{marginRight:'auto'}}>One account per company. The most senior contact becomes the decision-maker; the rest are saved in the account's notes. Everything lands as a <b>Lead</b>.</span>
           <button className="btn dk" onClick={onClose} disabled={busy}>Cancel</button>
           <button className="btn pri" disabled={!built.ok.length||busy} onClick={commit}>
             {busy?'Importing…':`Import ${built.ok.length} account${built.ok.length===1?'':'s'}`}
