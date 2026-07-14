@@ -1,6 +1,8 @@
 <div id="root"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>if(window.pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}</script>
 <script src="./js/config.js"></script>
 <script src="./js/store.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -233,7 +235,45 @@ tr:hover td{background:#F6F8F9}
 .lightbox{position:fixed;inset:0;background:rgba(14,21,28,.9);display:flex;align-items:center;justify-content:center;z-index:80;padding:24px;cursor:zoom-out}
 .lightbox img{max-width:100%;max-height:100%;border-radius:3px}
 
-@media(max-width:900px){.reader{grid-template-columns:1fr}.toc{position:static;max-height:none}.stagetabs{overflow-x:auto}.stagetabs button{min-width:150px}.sheet.wide{max-width:100%}.brow{flex-wrap:wrap}.split{grid-template-columns:1fr}.board{grid-template-columns:repeat(6,minmax(165px,1fr))}.f3,.f2{grid-template-columns:1fr}}
+
+/* importer */
+.mapgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:6px}
+
+/* floor plans */
+.plangrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.plancard{border:1px solid var(--line);border-radius:3px;overflow:hidden;background:#fff}
+.planthumb{position:relative;height:110px;background:#E6EAED;cursor:pointer;overflow:hidden}
+.planthumb img{width:100%;height:100%;object-fit:contain;display:block;background:#fff}
+.planthumb:hover{outline:2px solid var(--water);outline-offset:-2px}
+.pinlayer{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.planfoot{padding:7px}
+.planfoot input{font-size:12px;font-weight:600;padding:4px 6px}
+.planadd{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:150px;border:1.5px dashed #9FADB8;border-radius:3px;cursor:pointer;background:#F6F8F9;text-align:center;padding:10px}
+.planadd:hover{border-color:var(--water);background:#EAF2F6}
+.planadd input{display:none}
+.planadd>span:first-of-type{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mute)}
+.planadd:hover>span:first-of-type{color:var(--water)}
+.planadd.busy{opacity:.65;cursor:wait}
+
+.sheet.plansheet{max-width:1100px}
+.planbar{display:flex;gap:5px;padding:8px 12px;border-bottom:1px solid var(--line);background:#F3F6F7;flex-wrap:wrap;align-items:center}
+.tool{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:2px;padding:5px 9px;font-size:11.5px;font-weight:600;color:#46545F}
+.tool:hover{border-color:var(--water)}
+.tool.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tool i{width:11px;height:11px;border-radius:50%;display:block;flex:none}
+.tool i.pen{border-radius:1px;background:#E8B400}
+.tool i.er{border-radius:1px;background:#fff;border:1.5px solid var(--alarm)}
+.planstage{background:#4A5661;padding:12px;max-height:60vh;overflow:auto;display:flex;justify-content:center}
+.plancanvas{position:relative;display:inline-block;max-width:100%;user-select:none;-webkit-user-select:none;touch-action:none;background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.3)}
+.plancanvas img{display:block;max-width:100%;height:auto;pointer-events:none}
+.ink{position:absolute;inset:0;width:100%;height:100%}
+.pinhit{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.45);padding:0;cursor:pointer;transition:transform .12s}
+.pinhit:hover{transform:scale(1.25)}
+.pinhit.on{transform:scale(1.35);box-shadow:0 0 0 3px var(--hiviz),0 1px 5px rgba(0,0,0,.45)}
+.pinlab{position:absolute;left:26px;top:50%;transform:translateY(-50%);background:rgba(14,21,28,.9);color:#fff;font-size:10.5px;font-weight:600;padding:2px 6px;border-radius:2px;white-space:nowrap;pointer-events:none}
+.pinedit{padding:10px 14px;border-top:1px solid var(--line);background:#FFF9DE}
+
+@media(max-width:900px){.reader{grid-template-columns:1fr}.toc{position:static;max-height:none}.stagetabs{overflow-x:auto}.planbar{overflow-x:auto;flex-wrap:nowrap}.tool{white-space:nowrap}.planstage{max-height:50vh}.stagetabs button{min-width:150px}.sheet.wide{max-width:100%}.brow{flex-wrap:wrap}.split{grid-template-columns:1fr}.board{grid-template-columns:repeat(6,minmax(165px,1fr))}.f3,.f2{grid-template-columns:1fr}}
 @media print{header.top,nav.tabs,.btn,.bar{display:none!important}#root{background:#fff}}
 </style>
 
@@ -290,7 +330,7 @@ const BTYPES=['Office','Retail','Multifamily','Condo / HOA','Medical / dental','
 const ROLES=['Property manager','Assistant manager','Building engineer','Maintenance tech','On-site super','Owner / asset manager','Board president','Security','After-hours answering service'];
 const VENDORS=['Plumber','Electrician','HVAC','Fire / sprinkler','Elevator','Alarm / monitoring','Insurance carrier','Insurance agent','Indoor environmental pro (IEP)'];
 const SEV=['Low','Moderate','High','Critical'];
-const newBldg=()=>({id:uid(),name:'',address:'',btype:BTYPES[0],year:'',sf:'',floors:'',units:'',occupancy:'',construction:'',sprinklered:'',alarm:'',sitePhotos:[],
+const newBldg=()=>({id:uid(),name:'',address:'',btype:BTYPES[0],year:'',sf:'',floors:'',units:'',occupancy:'',construction:'',sprinklered:'',alarm:'',sitePhotos:[],plans:[],
   shutoffs:[],access:{keys:'',codes:'',afterHours:'',elevator:'',dock:'',parking:''},
   docs:{floorplans:false,risers:false,mech:false,roof:false,sprinklerZones:false,photos:false},
   contacts:[],vendors:[],vulns:[],losses:'',auth:{signed:false,threshold:'',signer:''},delivered:false,notes:''});
@@ -672,6 +712,7 @@ function App(){
   const [ready,setReady]=useState(false);
   const [jump,setJump]=useState(null);
   const [gate,setGate]=useState(null);   // 'signin' | Error | null
+  const [imp,setImp]=useState(false);
   const go=id=>{setEdit(null);setJump(id);setTab('play');window.scrollTo(0,0);};
 
   const normalize=base=>{
@@ -760,6 +801,7 @@ function App(){
         <button className="btn gh" onClick={exportCSV}>Export CSV</button>
         <button className="btn gh" onClick={exportJSON}>Back up</button>
         <label className="btn gh" style={{margin:0}}>Restore<input type="file" accept=".json" onChange={importJSON} style={{display:'none'}}/></label>
+        <button className="btn gh" onClick={()=>setImp(true)}>Import list</button>
         {Store.isRemote && <button className="btn gh" onClick={()=>Store.signOut()}>Sign out</button>}
         <button className="btn pri" onClick={()=>setEdit({id:uid(),name:'',vertical:VERTICALS[0],market:MARKETS[0],contact:'',title:'',phone:'',email:'',stage:'lead',doors:0,last:'',next:'',notes:'',bldgs:[],created:today()})}>+ Add account</button>
       </div>
@@ -779,6 +821,13 @@ function App(){
       {tab==='plan'     && <Plan A={A} go={go}/>}
       {tab==='play'     && <Playbook jump={jump} clear={()=>setJump(null)}/>}
     </main>
+
+    {imp && <Importer A={A} onClose={()=>setImp(false)} onImport={async list=>{
+      try{
+        await Store.saveAccounts(list);
+        persist({...db, accts:[...list,...A]});
+      }catch(err){ alert(err.message); }
+    }}/>}
 
     {edit && <Editor a={edit} onSave={a=>{upsert(a);setEdit(null);}} onClose={()=>setEdit(null)} onDelete={id=>{remove(id);setEdit(null);}}
       onGoMine={a=>{upsert(a);setEdit(null);setTab('mine');window.scrollTo(0,0);}}/>}
@@ -867,6 +916,10 @@ function Board({A,move,onOpen,go}){
             </div>;
           })}
         </div>
+        {!A.length && <div className="empty" style={{padding:'22px 16px'}}>
+          <b>The board is empty</b>
+          Add an account, or bring the whole target list in at once with <b>Import list</b> at the top right.
+        </div>}
         <div className="hint" style={{marginTop:10}}>
           Cadence before an account goes stale — Lead 21d · Prospect 14d · Opportunity 10d · Verbal 7d · Priority 45d · VIP 30d.
           <b style={{color:'var(--alarm)'}}> Red</b> = more than double the cadence. Movement up a rung is the only score that counts.{' '}
@@ -1163,6 +1216,229 @@ function Playbook({jump,clear}){
 
 
 
+
+/* ---- bulk import: get 300 targets onto the board in one move ---- */
+
+/* A real CSV parser — quoted fields, embedded commas, escaped quotes.
+   Splitting on ',' breaks the moment a company is called "Smith, Jones & Co." */
+function parseCSV(text){
+  const rows=[]; let row=[], cell='', q=false;
+  text=text.replace(/^\uFEFF/,'').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  const tab=(text.split('\n')[0].match(/\t/g)||[]).length > (text.split('\n')[0].match(/,/g)||[]).length;
+  const D=tab?'\t':',';
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){
+      if(c==='"'){ if(text[i+1]==='"'){cell+='"';i++;} else q=false; }
+      else cell+=c;
+    } else if(c==='"'){ q=true; }
+    else if(c===D){ row.push(cell); cell=''; }
+    else if(c==='\n'){ row.push(cell); rows.push(row); row=[]; cell=''; }
+    else cell+=c;
+  }
+  if(cell||row.length){ row.push(cell); rows.push(row); }
+  return rows.filter(r=>r.some(x=>String(x).trim()));
+}
+
+const FIELDS=[
+  {k:'name',    t:'Company',        req:true,  hints:['company','account','business','organization','name','firm','client','dba']},
+  {k:'contact', t:'Contact',        hints:['contact','first','full name','decision','owner','manager name','poc','person']},
+  {k:'title',   t:'Title',          hints:['title','role','position','job']},
+  {k:'phone',   t:'Phone',          hints:['phone','tel','mobile','cell','number','direct']},
+  {k:'email',   t:'Email',          hints:['email','e-mail','mail']},
+  {k:'vertical',t:'Vertical',       hints:['vertical','type','industry','category','segment']},
+  {k:'market',  t:'Market',         hints:['market','city','region','territory','area','location','town']},
+  {k:'doors',   t:'Buildings',      hints:['building','doors','units','properties','portfolio','sites','count']},
+  {k:'stage',   t:'Stage',          hints:['stage','status','lifecycle']},
+  {k:'notes',   t:'Notes',          hints:['note','comment','detail','description','source','address','street']},
+];
+
+/* Guess which column is which. Beats making someone map 10 dropdowns. */
+function autoMap(headers){
+  const m={}; const used=new Set();
+  FIELDS.forEach(f=>{
+    const i=headers.findIndex((h,ix)=>{
+      if(used.has(ix)) return false;
+      const H=String(h).toLowerCase().trim();
+      return f.hints.some(x=>H===x||H.includes(x));
+    });
+    if(i>=0){ m[f.k]=i; used.add(i); }
+  });
+  return m;
+}
+
+/* Fuzzy-match a free-text value to one of our fixed lists. */
+function nearest(val,list){
+  if(!val) return null;
+  const v=String(val).toLowerCase().trim();
+  let hit=list.find(x=>x.toLowerCase()===v);
+  if(hit) return hit;
+  hit=list.find(x=>x.toLowerCase().includes(v)||v.includes(x.toLowerCase().split(' /')[0]));
+  return hit||null;
+}
+function guessMarket(v){
+  if(!v) return null;
+  const s=String(v).toLowerCase();
+  if(/san francisco|\bsf\b|daly city|south san|brisbane/.test(s)) return MARKETS[0];
+  if(/petaluma|santa rosa|novato|sonoma|marin|napa|rohnert|cotati|san rafael|north bay|windsor|healdsburg/.test(s)) return MARKETS[1];
+  if(/walnut creek|concord|oakland|berkeley|east bay|danville|lafayette|pleasant hill|alamo|orinda|martinez/.test(s)) return MARKETS[2];
+  if(/san jose|santa clara|sunnyvale|south bay|campbell|cupertino|milpitas|palo alto|mountain view/.test(s)) return MARKETS[3];
+  return null;
+}
+function guessVertical(v){
+  if(!v) return null;
+  const s=String(v).toLowerCase();
+  if(/hoa|condo|association|community/.test(s)) return VERTICALS[1];
+  if(/apartment|multifamily|multi-family|residential/.test(s)) return VERTICALS[2];
+  if(/medical|dental|surgical|clinic|assisted|senior|nursing|health/.test(s)) return VERTICALS[3];
+  if(/hotel|restaurant|hospitality|motel|inn/.test(s)) return VERTICALS[4];
+  if(/plumb|rooter|drain/.test(s)) return VERTICALS[5];
+  if(/insur|adjust|carrier|claims|tpa/.test(s)) return VERTICALS[6];
+  if(/contractor|construction|\bgc\b|builder/.test(s)) return VERTICALS[7];
+  if(/school|church|city of|county|municipal|district|university/.test(s)) return VERTICALS[8];
+  if(/realt|broker|real estate|inspect/.test(s)) return VERTICALS[9];
+  if(/propert|management|commercial|facilit/.test(s)) return VERTICALS[0];
+  return null;
+}
+
+function Importer({A,onImport,onClose}){
+  const [step,setStep]=useState(1);
+  const [rows,setRows]=useState(null);
+  const [hasHead,setHasHead]=useState(true);
+  const [map,setMap]=useState({});
+  const [defMarket,setDefMarket]=useState(MARKETS[0]);
+  const [defVert,setDefVert]=useState(VERTICALS[0]);
+  const [text,setText]=useState('');
+  const [busy,setBusy]=useState(false);
+
+  const load=raw=>{
+    const r=parseCSV(raw);
+    if(r.length<1){ alert("That didn't parse as a table. Paste rows from a spreadsheet, or upload a .csv file."); return; }
+    setRows(r);
+    setMap(autoMap(r[0]));
+    setStep(2);
+  };
+  const onFile=e=>{
+    const f=e.target.files[0]; e.target.value='';
+    if(!f) return;
+    const rd=new FileReader();
+    rd.onload=()=>load(rd.result);
+    rd.readAsText(f);
+  };
+
+  const head = rows? (hasHead? rows[0].map(h=>String(h).trim()) : rows[0].map((_,i)=>`Column ${i+1}`)) : [];
+  const body = rows? (hasHead? rows.slice(1) : rows) : [];
+
+  /* Build the accounts, and work out what's a duplicate of what's already on the board. */
+  const built=useMemo(()=>{
+    if(!rows) return {ok:[],dupe:[],bad:0};
+    const norm=x=>String(x||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+    const existing=new Map(A.map(a=>[norm(a.name),a]));
+    const seen=new Set();
+    const ok=[],dupe=[]; let bad=0;
+    const get=(r,k)=>map[k]!=null? String(r[map[k]]??'').trim() : '';
+
+    body.forEach(r=>{
+      const name=get(r,'name');
+      if(!name){ bad++; return; }
+      const key=norm(name);
+      const rec={
+        id:uid(), name,
+        contact:get(r,'contact'), title:get(r,'title'),
+        phone:get(r,'phone'), email:get(r,'email'),
+        vertical: guessVertical(get(r,'vertical')) || guessVertical(name) || nearest(get(r,'vertical'),VERTICALS) || defVert,
+        market:   guessMarket(get(r,'market')) || guessMarket(get(r,'notes')) || defMarket,
+        stage:    (STAGES.find(s=>s.name.toLowerCase()===get(r,'stage').toLowerCase())||{}).id || 'lead',
+        doors:    parseInt(String(get(r,'doors')).replace(/[^0-9]/g,''),10)||0,
+        notes:get(r,'notes'), next:'', last:'', bldgs:[], created:today()
+      };
+      if(existing.has(key)||seen.has(key)) dupe.push(rec);
+      else { seen.add(key); ok.push(rec); }
+    });
+    return {ok,dupe,bad};
+  },[rows,map,hasHead,defMarket,defVert,A]);
+
+  const commit=async()=>{
+    setBusy(true);
+    await onImport(built.ok);
+    setBusy(false);
+    onClose();
+  };
+
+  return <div className="modal" onMouseDown={e=>{if(e.target===e.currentTarget&&!busy)onClose();}}>
+    <div className="sheet wide" onMouseDown={e=>e.stopPropagation()}>
+      <h2>Import target list <span className="hint" style={{marginLeft:'auto',fontWeight:400,textTransform:'none',letterSpacing:0,fontFamily:'Inter'}}>Step {step} of 2</span></h2>
+
+      {step===1 && <div className="body">
+        <div className="note" style={{margin:'0 0 14px'}}>
+          Paste straight from Excel or Google Sheets, or upload a CSV. The only column that's required is the company name — everything else is optional, and anything missing gets filled in from the defaults you pick on the next screen.
+        </div>
+        <div className="fld">
+          <label>Paste your rows</label>
+          <textarea rows="9" value={text} onChange={e=>setText(e.target.value)} className="mono" style={{fontSize:12}}
+            placeholder={"Company\tContact\tPhone\tCity\tBuildings\nBayline Property Group\tDana Ruiz\t(415) 555-0142\tSan Francisco\t14\nSonoma Ridge HOA\tMarcus Lee\t(707) 555-0193\tPetaluma\t9"}/>
+        </div>
+        <div className="row" style={{gap:10,marginTop:12}}>
+          <button className="btn pri" disabled={!text.trim()} onClick={()=>load(text)}>Read the rows</button>
+          <span className="hint">or</span>
+          <label className="btn" style={{margin:0}}>Upload a CSV<input type="file" accept=".csv,.tsv,.txt" onChange={onFile} style={{display:'none'}}/></label>
+        </div>
+      </div>}
+
+      {step===2 && rows && <>
+        <div className="body" style={{maxHeight:'58vh',overflow:'auto'}}>
+          <div className="row" style={{justifyContent:'space-between',marginBottom:12}}>
+            <label className="chk"><input type="checkbox" checked={hasHead} onChange={e=>{setHasHead(e.target.checked);setMap(autoMap(e.target.checked?rows[0]:rows[0].map((_,i)=>'')));}}/> First row is a header</label>
+            <button className="btn sm" onClick={()=>{setStep(1);setRows(null);}}>Start over</button>
+          </div>
+
+          <Sect t="Match the columns" sub="I've guessed from your headers. Fix anything that's wrong."/>
+          <div className="mapgrid">
+            {FIELDS.map(f=><div key={f.k} className="fld">
+              <label>{f.t}{f.req && <span style={{color:'var(--alarm)'}}> *</span>}</label>
+              <select value={map[f.k]??''} onChange={e=>setMap({...map,[f.k]:e.target.value===''?null:+e.target.value})}>
+                <option value="">— not in my file —</option>
+                {head.map((h,i)=><option key={i} value={i}>{h||`Column ${i+1}`}</option>)}
+              </select>
+            </div>)}
+          </div>
+
+          <Sect t="Defaults" sub="Used for any row where the file doesn't say. Market and vertical are also guessed from the city and company name where possible."/>
+          <div className="f2">
+            <div className="fld"><label>Market</label><select value={defMarket} onChange={e=>setDefMarket(e.target.value)}>{MARKETS.map(m=><option key={m}>{m}</option>)}</select></div>
+            <div className="fld"><label>Vertical</label><select value={defVert} onChange={e=>setDefVert(e.target.value)}>{VERTICALS.map(v=><option key={v}>{v}</option>)}</select></div>
+          </div>
+
+          <Sect t="Preview"/>
+          <div className="row" style={{gap:8,marginBottom:8}}>
+            <span className="tag g">{built.ok.length} new</span>
+            {built.dupe.length>0 && <span className="tag y">{built.dupe.length} already on the board — skipped</span>}
+            {built.bad>0 && <span className="tag r">{built.bad} with no company name — skipped</span>}
+          </div>
+          {!built.ok.length ? <div className="hint">Nothing to import. Check that the Company column is mapped to the right column.</div> :
+          <div style={{overflowX:'auto',border:'1px solid var(--line)',borderRadius:3}}>
+            <table><thead><tr><th>Company</th><th>Contact</th><th>Phone</th><th>Vertical</th><th>Market</th><th>Bldgs</th></tr></thead>
+            <tbody>{built.ok.slice(0,8).map(r=><tr key={r.id}>
+              <td><b>{r.name}</b></td><td>{r.contact||<span className="hint">—</span>}</td>
+              <td className="mono" style={{fontSize:11.5}}>{r.phone||'—'}</td>
+              <td style={{fontSize:11.5}}>{r.vertical}</td><td style={{fontSize:11.5}}>{r.market}</td>
+              <td className="mono">{r.doors||'—'}</td>
+            </tr>)}</tbody></table>
+            {built.ok.length>8 && <div className="hint" style={{padding:'7px 9px',borderTop:'1px solid var(--line)'}}>…and {built.ok.length-8} more</div>}
+          </div>}
+        </div>
+        <div className="foot">
+          <span className="hint" style={{marginRight:'auto'}}>Everything lands as a <b>Lead</b>. Work them up the board from there.</span>
+          <button className="btn dk" onClick={onClose} disabled={busy}>Cancel</button>
+          <button className="btn pri" disabled={!built.ok.length||busy} onClick={commit}>
+            {busy?'Importing…':`Import ${built.ok.length} account${built.ok.length===1?'':'s'}`}
+          </button>
+        </div>
+      </>}
+    </div>
+  </div>;
+}
+
 /* ---- photo capture: the reason any of this is on a server ---- */
 function Photos({photos=[],onChange,meta,label}){
   const [urls,setUrls]=useState({});
@@ -1205,6 +1481,222 @@ function Photos({photos=[],onChange,meta,label}){
       <span>{busy?'Uploading…':photos.length?'+ Photo':'Take photo'}</span>
     </label>
     {view && <div className="lightbox" onClick={()=>setView(null)}><img src={view} alt=""/></div>}
+  </div>;
+}
+
+
+/* ---- floor plans: upload, pin the shutoffs, draw the zones ---- */
+const PINK=[
+  {k:'water',   t:'Water shutoff',   c:'#1E7FA6'},
+  {k:'gas',     t:'Gas shutoff',     c:'#D98324'},
+  {k:'elec',    t:'Electrical',      c:'#C6412C'},
+  {k:'sprink',  t:'Sprinkler / FDC', c:'#2E7D4F'},
+  {k:'access',  t:'Access / key',    c:'#6B21A8'},
+  {k:'risk',    t:'Known risk',      c:'#0E151C'},
+];
+const pinC=k=>(PINK.find(p=>p.k===k)||PINK[0]).c;
+
+function Plans({b,a,onChange}){
+  const P=b.plans||[];
+  const [open,setOpen]=useState(null);
+  const [busy,setBusy]=useState('');
+
+  const add=async e=>{
+    const files=[...e.target.files]; e.target.value='';
+    if(!files.length) return;
+    const out=[...P];
+    for(const file of files){
+      setBusy(file.name);
+      try{
+        if(file.type==='application/pdf'){
+          if(!window.pdfjsLib) throw new Error('The PDF reader did not load. Reload the page and try again.');
+          const buf=await file.arrayBuffer();
+          const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+          // A plan set is usually one level per page. Import each page as its own level.
+          for(let n=1;n<=pdf.numPages;n++){
+            const page=await pdf.getPage(n);
+            const vp=page.getViewport({scale:2});     // 2x so it stays readable when zoomed
+            const c=document.createElement('canvas');
+            c.width=vp.width; c.height=vp.height;
+            await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+            const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',0.82));
+            const img=new File([blob],`${file.name.replace(/\.pdf$/i,'')}-p${n}.jpg`,{type:'image/jpeg'});
+            const rec=await Store.uploadPhoto(img,{acct:a.name,bldg:b.name,label:'plan'});
+            out.push({id:uid(),name:pdf.numPages>1?`Level ${n}`:file.name.replace(/\.pdf$/i,''),
+                      img:rec,w:c.width,h:c.height,pins:[],strokes:[]});
+          }
+        } else if(/^image\//.test(file.type)){
+          const rec=await Store.uploadPhoto(file,{acct:a.name,bldg:b.name,label:'plan'});
+          const dims=await new Promise(res=>{const i=new Image();
+            i.onload=()=>res({w:i.naturalWidth,h:i.naturalHeight});
+            i.onerror=()=>res({w:1600,h:1200});
+            i.src=URL.createObjectURL(file);});
+          out.push({id:uid(),name:file.name.replace(/\.[^.]+$/,''),img:rec,w:dims.w,h:dims.h,pins:[],strokes:[]});
+        } else {
+          alert(`${file.name} isn't a PDF or an image.`);
+        }
+      }catch(err){ alert(err.message); }
+    }
+    setBusy('');
+    onChange(out);
+  };
+
+  const del=async i=>{
+    if(!confirm(`Delete "${P[i].name}"? The pins and markup on it go too.`)) return;
+    await Store.deletePhoto(P[i].img);
+    onChange(P.filter((_,j)=>j!==i));
+  };
+
+  return <>
+    <Sect t="Floor plans" sub="Upload a PDF set or shoot the printed plan on the wall. Then pin the shutoffs onto it — that's what makes it useful at 2am."/>
+    {!P.length && <div className="hint" style={{padding:'6px 0 10px'}}>No plans yet. A PDF with several pages imports as one level per page.</div>}
+
+    <div className="plangrid">
+      {P.map((p,i)=><div key={p.id} className="plancard">
+        <PlanThumb p={p} onClick={()=>setOpen(i)}/>
+        <div className="planfoot">
+          <input value={p.name} onChange={e=>onChange(P.map((x,j)=>j===i?{...x,name:e.target.value}:x))}/>
+          <div className="row" style={{justifyContent:'space-between',marginTop:5}}>
+            <span className="hint">{(p.pins||[]).length} pin{(p.pins||[]).length===1?'':'s'}</span>
+            <div className="row" style={{gap:4}}>
+              <button className="btn sm" onClick={()=>setOpen(i)}>Mark up</button>
+              <button className="btn sm dang" onClick={()=>del(i)}>×</button>
+            </div>
+          </div>
+        </div>
+      </div>)}
+
+      <label className={'planadd'+(busy?' busy':'')}>
+        <input type="file" accept="application/pdf,image/*" multiple onChange={add} disabled={!!busy}/>
+        <span>{busy?`Importing ${busy}…`:'+ Add plan'}</span>
+        <span className="hint" style={{fontWeight:400,textTransform:'none',letterSpacing:0}}>PDF or photo</span>
+      </label>
+    </div>
+
+    {open!=null && P[open] && <PlanEditor plan={P[open]} shutoffs={b.shutoffs||[]}
+      onSave={p=>onChange(P.map((x,j)=>j===open?p:x))}
+      onClose={()=>setOpen(null)}/>}
+  </>;
+}
+
+function PlanThumb({p,onClick}){
+  const [u,setU]=useState('');
+  useEffect(()=>{let live=true;Store.photoURL(p.img).then(x=>live&&setU(x));return()=>{live=false;};},[p.img?.path,p.img?.at]);
+  return <div className="planthumb" onClick={onClick}>
+    {u? <img src={u} alt={p.name}/> : <div className="thumbload" style={{height:'100%'}}/>}
+    <svg className="pinlayer" viewBox={`0 0 ${p.w} ${p.h}`} preserveAspectRatio="xMidYMid meet">
+      {(p.pins||[]).map(pin=><circle key={pin.id} cx={pin.x*p.w} cy={pin.y*p.h}
+        r={Math.max(p.w,p.h)*0.014} fill={pinC(pin.kind)} stroke="#fff" strokeWidth={Math.max(p.w,p.h)*0.004}/>)}
+    </svg>
+  </div>;
+}
+
+/* the markup surface */
+function PlanEditor({plan,shutoffs,onSave,onClose}){
+  const [p,setP]=useState(plan);
+  const [url,setUrl]=useState('');
+  const [tool,setTool]=useState('water');   // a pin kind, or 'draw', or 'erase'
+  const [drawing,setDrawing]=useState(null);
+  const [sel,setSel]=useState(null);
+  const wrap=useRef(null);
+
+  useEffect(()=>{let live=true;Store.photoURL(p.img).then(x=>live&&setUrl(x));return()=>{live=false;};},[]);
+  const save=np=>{setP(np);onSave(np);};
+
+  // normalized 0..1 coords so pins survive any zoom or screen size
+  const pt=e=>{
+    const r=wrap.current.getBoundingClientRect();
+    const t=e.touches?e.touches[0]:e;
+    return {x:Math.min(1,Math.max(0,(t.clientX-r.left)/r.width)),
+            y:Math.min(1,Math.max(0,(t.clientY-r.top)/r.height))};
+  };
+
+  const down=e=>{
+    if(e.target.closest('.pinhit')) return;
+    const c=pt(e);
+    if(tool==='draw'){ setDrawing([c]); }
+    else if(tool==='erase'){ /* handled on pin/stroke click */ }
+    else {
+      const pin={id:uid(),kind:tool,x:c.x,y:c.y,label:'',ref:''};
+      save({...p,pins:[...(p.pins||[]),pin]});
+      setSel(pin.id);
+    }
+  };
+  const moveP=e=>{ if(drawing){ e.preventDefault(); setDrawing(d=>[...d,pt(e)]); } };
+  const up=()=>{
+    if(drawing){
+      if(drawing.length>2) save({...p,strokes:[...(p.strokes||[]),{id:uid(),pts:drawing}]});
+      setDrawing(null);
+    }
+  };
+
+  const pins=p.pins||[], strokes=p.strokes||[];
+  const cur=pins.find(x=>x.id===sel);
+  const setPin=(id,patch)=>save({...p,pins:pins.map(x=>x.id===id?{...x,...patch}:x)});
+  const delPin=id=>{save({...p,pins:pins.filter(x=>x.id!==id)});setSel(null);};
+
+  const path=pts=>pts.map((c,i)=>`${i?'L':'M'}${(c.x*1000).toFixed(1)} ${(c.y*1000).toFixed(1)}`).join(' ');
+
+  return <div className="modal" style={{padding:12}} onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <div className="sheet plansheet" onMouseDown={e=>e.stopPropagation()}>
+      <h2>{p.name}<span className="hint" style={{marginLeft:'auto',fontWeight:400,textTransform:'none',letterSpacing:0,fontFamily:'Inter'}}>Tap the plan to drop a pin</span></h2>
+
+      <div className="planbar">
+        {PINK.map(k=><button key={k.k} className={'tool'+(tool===k.k?' on':'')} onClick={()=>setTool(k.k)}>
+          <i style={{background:k.c}}/>{k.t}
+        </button>)}
+        <button className={'tool'+(tool==='draw'?' on':'')} onClick={()=>setTool('draw')}><i className="pen"/>Draw zone</button>
+        <button className={'tool'+(tool==='erase'?' on':'')} onClick={()=>setTool('erase')}><i className="er"/>Erase</button>
+        {strokes.length>0 && <button className="btn sm" style={{marginLeft:'auto'}}
+          onClick={()=>{if(confirm('Clear all drawn zones?'))save({...p,strokes:[]});}}>Clear drawing</button>}
+      </div>
+
+      <div className="planstage">
+        <div className="plancanvas" ref={wrap}
+          onMouseDown={down} onMouseMove={moveP} onMouseUp={up} onMouseLeave={up}
+          onTouchStart={down} onTouchMove={moveP} onTouchEnd={up}
+          style={{cursor:tool==='draw'?'crosshair':tool==='erase'?'not-allowed':'copy'}}>
+          {url? <img src={url} alt={p.name} draggable="false"/> : <div className="thumbload" style={{height:300}}/>}
+
+          <svg className="ink" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+            {strokes.map(st=><path key={st.id} d={path(st.pts)} fill="none"
+              stroke={tool==='erase'?'#C6412C':'#E8B400'} strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"
+              style={{pointerEvents:tool==='erase'?'stroke':'none',cursor:'pointer',opacity:.9}}
+              onClick={()=>{if(tool==='erase')save({...p,strokes:strokes.filter(x=>x.id!==st.id)});}}/>)}
+            {drawing && <path d={path(drawing)} fill="none" stroke="#E8B400" strokeWidth="6" strokeLinecap="round"/>}
+          </svg>
+
+          {pins.map(pin=><button key={pin.id} className={'pinhit'+(sel===pin.id?' on':'')}
+            style={{left:pin.x*100+'%',top:pin.y*100+'%',background:pinC(pin.kind)}}
+            onClick={e=>{e.stopPropagation(); if(tool==='erase') delPin(pin.id); else setSel(pin.id);}}>
+            {pin.label? <span className="pinlab">{pin.label}</span> : null}
+          </button>)}
+        </div>
+      </div>
+
+      {cur && <div className="pinedit">
+        <div className="row" style={{gap:8,alignItems:'flex-end'}}>
+          <div className="fld" style={{flex:1}}><label>Pin label</label>
+            <input autoFocus value={cur.label} onChange={e=>setPin(cur.id,{label:e.target.value})} placeholder="Main water shutoff — behind the door"/></div>
+          <div className="fld" style={{flex:1}}><label>Link to a logged shutoff</label>
+            <select value={cur.ref} onChange={e=>setPin(cur.id,{ref:e.target.value})}>
+              <option value="">— none —</option>
+              {shutoffs.map(so=><option key={so.id} value={so.id}>{so.system}{so.loc?` — ${so.loc}`:''}</option>)}
+            </select></div>
+          <div className="fld" style={{flex:'none'}}><label>Type</label>
+            <select value={cur.kind} onChange={e=>setPin(cur.id,{kind:e.target.value})}>
+              {PINK.map(k=><option key={k.k} value={k.k}>{k.t}</option>)}
+            </select></div>
+          <button className="btn sm dang" onClick={()=>delPin(cur.id)}>Delete pin</button>
+          <button className="btn sm" onClick={()=>setSel(null)}>Done</button>
+        </div>
+      </div>}
+
+      <div className="foot">
+        <span className="hint" style={{marginRight:'auto'}}>{pins.length} pin{pins.length===1?'':'s'} · {strokes.length} zone{strokes.length===1?'':'s'} · saves as you go</span>
+        <button className="btn pri" onClick={onClose}>Done</button>
+      </div>
+    </div>
   </div>;
 }
 
@@ -1380,12 +1872,14 @@ function Building({a,b,onSave,onClose,onDelete}){
         {tab==='s2' && <>
           <Sect t="Documentation collected"/>
           <div className="grid" style={{gap:6,marginBottom:16}}>
-            {[['floorplans','Floor plans — every level, including basement'],['risers','Riser diagrams — water, sprinkler, electrical'],
+            {[['risers','Riser diagrams — water, sprinkler, electrical'],
               ['mech','Mechanical rooms located and photographed'],['sprinklerZones','Sprinkler zones mapped to floors'],
               ['roof','Roof access — how you get up there, who has the key']]
               .map(([k,t])=><label key={k} className={'tick'+(f.docs[k]?' done':'')}>
                 <input type="checkbox" checked={f.docs[k]} onChange={e=>un('docs',k,e.target.checked)}/><span className="t">{t}</span></label>)}
           </div>
+          <Plans b={f} a={a} onChange={p=>u('plans',p)}/>
+
           <Sect t="Site photos" sub="Mechanical rooms, risers, roof access, the panel you'll never find again in the dark."/>
           <Photos photos={f.sitePhotos||[]} label="site" meta={{acct:a.name,bldg:f.name}}
             onChange={ph=>u('sitePhotos',ph)}/>
@@ -1489,6 +1983,10 @@ async function printARP(a,b){
   const row=(k,v)=>v?`<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`:'';
   const sev=s=>({Critical:'#C6412C',High:'#D98324',Moderate:'#1E7FA6',Low:'#6B7A87'}[s]||'#6B7A87');
   // resolve photos to viewable URLs so the plan is useful on paper and on screen
+  const plans=[];
+  for(const pl of (b.plans||[])){
+    try{ const u=await Store.photoURL(pl.img); if(u) plans.push({...pl,url:u}); }catch(e){}
+  }
   const shots={};
   for(const so of b.shutoffs){
     const p=(so.photos||[])[0];
@@ -1518,6 +2016,14 @@ table.g th{width:auto;background:#F2F4F5;color:#46545F;border-bottom:2px solid #
 footer{margin-top:22px;padding-top:10px;border-top:1px solid #CBD3DA;font-size:10px;color:#6B7A87;display:flex;justify-content:space-between}
 .empty{color:#8494A0;font-style:italic;font-size:10px}
 img.shot{width:80px;height:60px;object-fit:cover;border:1px solid #CBD3DA;border-radius:2px;display:block}
+.plan{margin-bottom:14px;page-break-inside:avoid}
+.plantitle{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#46545F;margin-bottom:4px}
+.planwrap{position:relative;display:inline-block;border:1px solid #CBD3DA;max-width:100%}
+.planwrap img{display:block;max-width:100%;height:auto}
+.planwrap .ink{position:absolute;inset:0;width:100%;height:100%}
+.planwrap .pin{position:absolute;width:17px;height:17px;margin:-9px 0 0 -9px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);color:#fff;font-size:9px;font-weight:700;line-height:13px;text-align:center}
+.pinkey{margin:6px 0 0;padding-left:18px;font-size:10.5px;color:#46545F;columns:2}
+.pinkey li{margin-bottom:2px}
 </style></head><body>
 <div class="haz"></div>
 <header>
@@ -1547,6 +2053,19 @@ ${b.contacts.map((c,i)=>`<tr><td><span class="ord">${i+1}</span></td><td><b>${es
 ${row('Keys / lockbox',b.access.keys)}${row('Codes / badges',b.access.codes)}${row('After-hours entry',b.access.afterHours)}
 ${row('Elevator / freight',b.access.elevator)}${row('Loading dock',b.access.dock)}${row('Truck parking',b.access.parking)}
 </table>
+
+${plans.length?`<h2>Floor plans</h2>
+${plans.map(pl=>`<div class="plan">
+  <div class="plantitle">${esc(pl.name)}</div>
+  <div class="planwrap">
+    <img src="${pl.url}">
+    <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" class="ink">
+      ${(pl.strokes||[]).map(st=>`<path d="${st.pts.map((c,i)=>`${i?'L':'M'}${(c.x*1000).toFixed(1)} ${(c.y*1000).toFixed(1)}`).join(' ')}" fill="none" stroke="#E8B400" stroke-width="6" stroke-linecap="round" opacity="0.9"/>`).join('')}
+    </svg>
+    ${(pl.pins||[]).map((pn,i)=>`<span class="pin" style="left:${(pn.x*100).toFixed(2)}%;top:${(pn.y*100).toFixed(2)}%;background:${({water:'#1E7FA6',gas:'#D98324',elec:'#C6412C',sprink:'#2E7D4F',access:'#6B21A8',risk:'#0E151C'})[pn.kind]||'#1E7FA6'}">${i+1}</span>`).join('')}
+  </div>
+  ${(pl.pins||[]).length?`<ol class="pinkey">${(pl.pins||[]).map(pn=>`<li>${esc(pn.label)|| esc(({water:'Water shutoff',gas:'Gas shutoff',elec:'Electrical',sprink:'Sprinkler / FDC',access:'Access / key',risk:'Known risk'})[pn.kind]||'Pin')}</li>`).join('')}</ol>`:''}
+</div>`).join('')}`:''}
 
 ${b.vendors.length?`<h2>Building vendors</h2><table class="g"><tr><th>Type</th><th>Company</th><th>Phone</th></tr>
 ${b.vendors.map(v=>`<tr><td>${esc(v.kind)}</td><td>${esc(v.co)}</td><td>${esc(v.phone)}</td></tr>`).join('')}</table>`:''}
