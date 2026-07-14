@@ -286,7 +286,46 @@ tr:hover td{background:#F6F8F9}
 .chip.on b{color:var(--hiviz)}
 .chip.on.al{background:var(--alarm);border-color:var(--alarm)}
 
-@media(max-width:900px){.reader{grid-template-columns:1fr}.toc{position:static;max-height:none}.stagetabs{overflow-x:auto}.flabel{width:auto}.chips{overflow-x:auto;flex-wrap:nowrap}.chip{white-space:nowrap}.planbar{overflow-x:auto;flex-wrap:nowrap}.tool{white-space:nowrap}.planstage{max-height:50vh}.stagetabs button{min-width:150px}.sheet.wide{max-width:100%}.brow{flex-wrap:wrap}.split{grid-template-columns:1fr}.board{grid-template-columns:repeat(6,minmax(165px,1fr))}.f3,.f2{grid-template-columns:1fr}}
+
+/* client portal */
+.sharebox{border:1px solid var(--line);border-left:4px solid var(--hiviz);border-radius:3px;background:#FFFDF2;padding:12px 14px;margin-bottom:16px}
+.subrow{display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--line);border-radius:3px;margin-bottom:8px;cursor:pointer;background:#fff}
+.subrow:hover{border-color:var(--water);background:#F6F9FA}
+.revsec{border:1px solid var(--line);border-radius:3px;padding:12px;margin-bottom:12px;background:#FBFCFC}
+.revsec.off{opacity:.45;background:#F2F4F5}
+.revsec table{margin-top:2px}
+.revsec th{cursor:default}
+
+
+/* vendors */
+.oprow{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-left:4px solid var(--alarm);border-radius:3px;margin-bottom:8px;background:#FDF7F6}
+.vsites{border:1px solid var(--line);border-radius:3px;padding:12px;background:#F6F8F9;margin-top:4px}
+
+
+/* jobs */
+.jsum{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;border:1px solid var(--line);border-radius:3px;padding:12px;background:#F6F8F9;margin-bottom:16px}
+.jsum>div{display:flex;flex-direction:column;gap:2px}
+.jsum b{font-size:19px;font-weight:700}
+.docs{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}
+.doc{position:relative;width:86px;border:1px solid var(--line);border-radius:3px;overflow:hidden;background:#fff;flex:none}
+.doc.img{width:70px}
+.doc img{width:70px;height:70px;object-fit:cover;display:block;cursor:zoom-in}
+.dico{height:56px;display:flex;align-items:center;justify-content:center;background:#EDF0F2;cursor:pointer;border-bottom:1px solid var(--line)}
+.dico:hover{background:#DCE7EC}
+.ext{font-family:'JetBrains Mono';font-size:11px;font-weight:700;color:var(--water);letter-spacing:.04em}
+.dmeta{padding:4px 5px;display:flex;flex-direction:column;gap:1px}
+.dn{font-size:10px;font-weight:600;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;color:var(--ink)}
+.dn:hover{color:var(--water)}
+.dx{position:absolute;top:2px;right:2px;width:17px;height:17px;border:none;border-radius:2px;background:rgba(14,21,28,.72);color:#fff;font-size:12px;line-height:14px;padding:0}
+.dx:hover{background:var(--alarm)}
+.dadd{display:flex;align-items:center;justify-content:center;min-width:86px;height:56px;border:1.5px dashed #9FADB8;border-radius:3px;background:#F6F8F9;cursor:pointer;flex:none;padding:0 8px;text-align:center}
+.dadd:hover{border-color:var(--water);background:#EAF2F6}
+.dadd input{display:none}
+.dadd span{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--mute);line-height:1.25}
+.dadd:hover span{color:var(--water)}
+.dadd.busy{opacity:.6;cursor:wait}
+
+@media(max-width:900px){.reader{grid-template-columns:1fr}.toc{position:static;max-height:none}.stagetabs{overflow-x:auto}.jsum{grid-template-columns:1fr 1fr}.flabel{width:auto}.chips{overflow-x:auto;flex-wrap:nowrap}.chip{white-space:nowrap}.planbar{overflow-x:auto;flex-wrap:nowrap}.tool{white-space:nowrap}.planstage{max-height:50vh}.stagetabs button{min-width:150px}.sheet.wide{max-width:100%}.brow{flex-wrap:wrap}.split{grid-template-columns:1fr}.board{grid-template-columns:repeat(6,minmax(165px,1fr))}.f3,.f2{grid-template-columns:1fr}}
 @media print{header.top,nav.tabs,.btn,.bar{display:none!important}#root{background:#fff}}
 </style>
 
@@ -358,7 +397,7 @@ function dmScore(b){
   const s2=[b.docs.floorplans,b.docs.risers,b.docs.mech,b.docs.sprinklerZones,b.docs.photos,
             has(b.access.keys)||has(b.access.codes),has(b.access.afterHours)];
   const s3=[b.contacts.length>=2,b.contacts.some(c=>/engineer|maintenance|super/i.test(c.role)),
-            b.contacts.some(c=>has(c.afterHours)),b.vendors.length>=2,
+            b.contacts.some(c=>has(c.afterHours)),(b.vendors||[]).filter(x=>x.vid).length>=2,
             b.auth.signed,has(b.auth.threshold)];
   const s4=[b.vulns.length>0,b.vulns.some(v=>v.sev==='High'||v.sev==='Critical')||b.vulns.length>=3,
             b.vulns.every(v=>has(v.fix)),has(b.losses),b.delivered];
@@ -726,6 +765,8 @@ function App(){
   const [jump,setJump]=useState(null);
   const [gate,setGate]=useState(null);   // 'signin' | Error | null
   const [imp,setImp]=useState(false);
+  const [V,setV]=useState([]);
+  const [J,setJ]=useState([]);
   const go=id=>{setEdit(null);setJump(id);setTab('play');window.scrollTo(0,0);};
 
   const normalize=base=>{
@@ -733,7 +774,11 @@ function App(){
     base.accts=(base.accts||[]).map(a=>({...a,bldgs:(a.bldgs||[]).map(b=>({...B,...b,
       access:{...B.access,...(b.access||{})},docs:{...B.docs,...(b.docs||{})},auth:{...B.auth,...(b.auth||{})},
       shutoffs:(b.shutoffs||[]).map(x=>({photos:[],...x})),
-      contacts:b.contacts||[],vendors:b.vendors||[],vulns:b.vulns||[]}))}));
+      contacts:b.contacts||[],
+      // vendors used to be free text on the building; they're directory links now.
+      // Anything without a vid is legacy and gets dropped from the link list.
+      vendors:(b.vendors||[]).filter(x=>x&&x.vid),
+      vulns:b.vulns||[]}))}));
     base.weeks=base.weeks||{};
     return base;
   };
@@ -744,6 +789,8 @@ function App(){
       if(!signedIn){ setGate('signin'); setReady(true); return; }
       const d=await Store.loadAll();
       setDb(normalize(d|| {accts:Store.isRemote?[]:SEED,weeks:{}} ));
+      setV(await Store.loadVendors());
+      setJ(await Store.loadJobs());
     }catch(err){ setGate(err); }
     setReady(true);
   })(); },[]);
@@ -760,6 +807,31 @@ function App(){
     Store.saveAccount(a);
   };
   const remove=id=>{ persist({...db, accts:A.filter(x=>x.id!==id)}); Store.deleteAccount(id); };
+
+  const saveJob=j=>{
+    setJ(p=>{const n=p.some(x=>x.id===j.id)? p.map(x=>x.id===j.id?j:x) : [j,...p];
+      Store.saveJobsLocal(n); return n;});
+    Store.saveJob(j);
+  };
+  const deleteJob=id=>{
+    setJ(p=>{const n=p.filter(x=>x.id!==id); Store.saveJobsLocal(n); return n;});
+    Store.deleteJob(id);
+  };
+
+  const saveVendor=v=>{
+    setV(p=>{const n=p.some(x=>x.id===v.id)? p.map(x=>x.id===v.id?v:x) : [v,...p];
+      Store.saveVendorsLocal(n); return n;});
+    Store.saveVendor(v);
+  };
+  const deleteVendor=id=>{
+    setV(p=>{const n=p.filter(x=>x.id!==id); Store.saveVendorsLocal(n); return n;});
+    Store.deleteVendor(id);
+    // unlink from every building
+    A.forEach(a=>{
+      const touched=(a.bldgs||[]).some(b=>(b.vendors||[]).some(x=>x.vid===id));
+      if(touched) upsert({...a, bldgs:a.bldgs.map(b=>({...b, vendors:(b.vendors||[]).filter(x=>x.vid!==id)}))});
+    });
+  };
   const move=(id,stage)=>{ const a=A.find(x=>x.id===id); if(a) upsert({...a,stage,last:today()}); };
   const touch=id=>{ const a=A.find(x=>x.id===id); if(a) upsert({...a,last:today()}); };
 
@@ -821,7 +893,7 @@ function App(){
     </header>
 
     <nav className="tabs">
-      {[['board','Response board'],['week','This week'],['accounts','Accounts'],['today',"Today's calls"],['mine','Data mining'],['plan','Gameplan'],['play','Playbook']].map(([k,l])=>
+      {[['board','Response board'],['week','This week'],['accounts','Accounts'],['today',"Today's calls"],['mine','Data mining'],['jobs','Job history'],['vendors','Vendors'],['inbox','From clients'],['plan','Gameplan'],['play','Playbook']].map(([k,l])=>
         <button key={k} className={tab===k?'on':''} onClick={()=>setTab(k)}>{l}</button>)}
     </nav>
 
@@ -830,7 +902,10 @@ function App(){
       {tab==='week'     && <Week A={A} wk={wk} w={wdata} bump={bump} weeks={db.weeks} go={go}/>}
       {tab==='accounts' && <Accounts A={A} onOpen={setEdit} remove={remove} touch={touch}/>}
       {tab==='today'    && <CallSheet A={A} touch={touch} onOpen={setEdit} go={go}/>}
-      {tab==='mine'     && <Mining A={A} onSave={upsert} go={go}/>}
+      {tab==='mine'     && <Mining A={A} V={V} onSave={upsert} onSaveVendor={saveVendor} go={go}/>}
+      {tab==='jobs'     && <Jobs J={J} A={A} V={V} onSaveJob={saveJob} onDeleteJob={deleteJob} go={go}/>}
+      {tab==='vendors'  && <Vendors V={V} A={A} onSaveVendor={saveVendor} onDeleteVendor={deleteVendor} onSaveAccount={upsert} go={go}/>}
+      {tab==='inbox'    && <Inbox A={A} onSave={upsert} go={go}/>}
       {tab==='plan'     && <Plan A={A} go={go}/>}
       {tab==='play'     && <Playbook jump={jump} clear={()=>setJump(null)}/>}
     </main>
@@ -842,7 +917,7 @@ function App(){
       }catch(err){ alert(err.message); }
     }}/>}
 
-    {edit && <Editor a={edit} onSave={a=>{upsert(a);setEdit(null);}} onClose={()=>setEdit(null)} onDelete={id=>{remove(id);setEdit(null);}}
+    {edit && <Editor a={edit} J={J.filter(j=>j.acctId===edit.id)} onSave={a=>{upsert(a);setEdit(null);}} onClose={()=>setEdit(null)} onDelete={id=>{remove(id);setEdit(null);}}
       onGoMine={a=>{upsert(a);setEdit(null);setTab('mine');window.scrollTo(0,0);}}/>}
   </>;
 }
@@ -1826,6 +1901,988 @@ function PlanEditor({plan,shutoffs,onSave,onClose}){
   </div>;
 }
 
+
+
+
+/* ---- JOB HISTORY ----
+   Every project at every property. Cost is built up from documents —
+   invoices, receipts, manual entries — not typed in as one guessed number.
+   A margin you assembled from paper is one you can defend at year end. */
+
+const JTYPES=['Water','Fire & smoke','Mold','Contents / pack-out','Reconstruction','Equipment rental','Other'];
+const JSTATUS=[
+  {k:'Active',   c:'#1E7FA6'},
+  {k:'Complete', c:'#0F5D7C'},
+  {k:'Invoiced', c:'#D98324'},
+  {k:'Paid',     c:'#2E7D4F'},
+  {k:'Disputed', c:'#C6412C'},
+];
+const jsC=k=>(JSTATUS.find(s=>s.k===k)||JSTATUS[0]).c;
+const RKIND=['Invoice','Progress billing','Supplement','Deductible','Out of pocket'];
+const CKIND=['Subcontractor','Labor','Equipment','Materials','Disposal','Permit / fee','Other'];
+
+const newJob=(acctId,bldgId)=>({id:'j_'+uid(),acctId,bldgId:bldgId||'',ref:'',claim:'',type:JTYPES[0],title:'',
+  started:today(),completed:'',status:'Active',cause:'',carrier:'',adjuster:'',responseMins:'',
+  revenue:[],costs:[],docs:[],photos:[],vids:[],notes:'',created:today()});
+
+const money=n=>n||n===0? '$'+Math.round(n).toLocaleString() : '—';
+const sum=(a,k='amount')=>(a||[]).reduce((n,x)=>n+(+x[k]||0),0);
+const jobRev=j=>sum(j.revenue);
+const jobCost=j=>sum(j.costs);
+const jobGP=j=>jobRev(j)-jobCost(j);
+const jobGPpc=j=>{const r=jobRev(j);return r? Math.round(jobGP(j)/r*100) : null;};
+
+/* ---- a file: upload, view, remove. Works for PDFs and images alike. ---- */
+function Docs({list=[],onChange,meta,accept,label,compact}){
+  const [busy,setBusy]=useState(false);
+  const [urls,setUrls]=useState({});
+
+  useEffect(()=>{ let live=true;
+    (async()=>{ const m={};
+      for(const d of list){ if(d.img||d.kind==='inline'){ const u=await Store.docURL(d); if(u) m[d.path||d.at]=u; } }
+      if(live) setUrls(m);
+    })();
+    return ()=>{live=false;};
+  },[JSON.stringify(list.map(d=>d.path||d.at))]);
+
+  const add=async e=>{
+    const files=[...e.target.files]; e.target.value='';
+    if(!files.length) return;
+    setBusy(true);
+    const out=[...list];
+    for(const f of files){
+      try{ out.push(await Store.uploadDoc(f,meta)); }
+      catch(err){ alert(err.message); }
+    }
+    onChange(out); setBusy(false);
+  };
+  const open=async d=>{
+    const u=await Store.docURL(d);
+    if(u) window.open(u,'_blank','noopener');
+    else alert('Could not open that file.');
+  };
+  const del=async i=>{
+    if(!confirm(`Remove ${list[i].name||'this file'}?`)) return;
+    await Store.deleteDoc(list[i]);
+    onChange(list.filter((_,j)=>j!==i));
+  };
+  const kb=n=>n>1048576? (n/1048576).toFixed(1)+' MB' : Math.round(n/1024)+' KB';
+
+  return <div className="docs">
+    {list.map((d,i)=>{
+      const u=urls[d.path||d.at];
+      return <div key={d.path||d.at||i} className={'doc'+(d.img?' img':'')}>
+        {d.img && u
+          ? <img src={u} alt="" onClick={()=>open(d)}/>
+          : <div className="dico" onClick={()=>open(d)}>
+              <span className="ext">{(d.name||'file').split('.').pop().slice(0,4).toUpperCase()}</span>
+            </div>}
+        {!compact && <div className="dmeta">
+          <span className="dn" title={d.name} onClick={()=>open(d)}>{d.name||'file'}</span>
+          {d.size>0 && <span className="hint">{kb(d.size)}</span>}
+        </div>}
+        <button className="dx" onClick={()=>del(i)}>×</button>
+      </div>;
+    })}
+    <label className={'dadd'+(busy?' busy':'')}>
+      <input type="file" multiple accept={accept} onChange={add} disabled={busy}/>
+      <span>{busy?'Uploading…':(label||'+ File')}</span>
+    </label>
+  </div>;
+}
+
+/* ---- one line of money, with the paper behind it ---- */
+function MoneyRows({rows,kinds,onChange,meta,what,hint}){
+  const add=()=>onChange([...(rows||[]),{id:uid(),kind:kinds[0],label:'',amount:'',vid:'',doc:null,at:today()}]);
+  const set=(i,r)=>onChange(rows.map((x,j)=>j===i?r:x));
+  const del=async i=>{ if(rows[i].doc) await Store.deleteDoc(rows[i].doc); onChange(rows.filter((_,j)=>j!==i)); };
+  const total=sum(rows);
+
+  return <>
+    <div className="secth">
+      <div><div className="disp" style={{fontSize:17}}>{what}</div>{hint&&<div className="hint">{hint}</div>}</div>
+      <div className="row" style={{gap:9}}>
+        <span className="mono" style={{fontWeight:700,fontSize:15}}>{money(total)}</span>
+        <button className="btn sm pri" onClick={add}>+ Add</button>
+      </div>
+    </div>
+    {!rows?.length && <div className="hint" style={{padding:'6px 0 12px'}}>Nothing logged.</div>}
+    {(rows||[]).map((r,i)=><div key={r.id} className="rowcard">
+      <div className="row" style={{gap:8,alignItems:'flex-end'}}>
+        <div className="fld" style={{flex:1.2}}><label>Kind</label>
+          <select value={r.kind} onChange={e=>set(i,{...r,kind:e.target.value})}>{kinds.map(k=><option key={k}>{k}</option>)}</select></div>
+        <div className="fld" style={{flex:2.4}}><label>What</label>
+          <input value={r.label} onChange={e=>set(i,{...r,label:e.target.value})} placeholder="Mitigation — Xactimate"/></div>
+        <div className="fld" style={{flex:1.2}}><label>Amount</label>
+          <input type="number" step="0.01" value={r.amount} onChange={e=>set(i,{...r,amount:e.target.value})} placeholder="0"/></div>
+        <button className="btn sm dang" onClick={()=>del(i)}>×</button>
+      </div>
+      <div style={{marginTop:8}}>
+        <Docs list={r.doc?[r.doc]:[]} compact meta={meta} label="+ Attach the paper"
+          onChange={d=>set(i,{...r,doc:d[0]||null})}/>
+      </div>
+    </div>)}
+  </>;
+}
+
+/* ---- the job record ---- */
+function Job({j,a,b,V,onSave,onClose,onDelete}){
+  const [f,setF]=useState(j);
+  const [tab,setTab]=useState('job');
+  const u=(k,v)=>{const nf={...f,[k]:v};setF(nf);onSave(nf);};
+  const meta={acct:a?.name,job:f.ref||f.id};
+  const rev=jobRev(f), cost=jobCost(f), gp=rev-cost, pc=jobGPpc(f);
+
+  return <div className="modal" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <div className="sheet wide" onMouseDown={e=>e.stopPropagation()}>
+      <h2>
+        <span>{f.ref||'New job'}</span>
+        <span className="hint" style={{fontWeight:400,marginLeft:8,textTransform:'none',letterSpacing:0,fontFamily:'Inter'}}>
+          {a?.name}{b?` · ${b.name}`:''}
+        </span>
+        {rev>0 && <span className="mono" style={{marginLeft:'auto',fontSize:14,fontWeight:700,color:pc>=40?'var(--go)':pc>=25?'var(--water)':'var(--alarm)'}}>
+          {money(gp)}{pc!=null?` · ${pc}%`:''}
+        </span>}
+      </h2>
+
+      <div className="stagetabs">
+        {[['job','The job'],['money','Money'],['files','Documents'],['photos','Photos']].map(([k,l])=>
+          <button key={k} className={tab===k?'on':''} onClick={()=>setTab(k)}>
+            <span className="stt">{l}</span>
+            {k==='money'&&rev>0 && <span className="spc">{money(rev)}</span>}
+            {k==='files' &&(f.docs||[]).length>0 && <span className="spc">{f.docs.length}</span>}
+            {k==='photos'&&(f.photos||[]).length>0 && <span className="spc">{f.photos.length}</span>}
+          </button>)}
+      </div>
+
+      <div className="body" style={{maxHeight:'62vh',overflow:'auto'}}>
+        {tab==='job' && <>
+          <div className="f3">
+            <div className="fld"><label>Job number</label><input value={f.ref} onChange={e=>u('ref',e.target.value)} placeholder="ARC-2602-0031"/></div>
+            <div className="fld"><label>Type</label><select value={f.type} onChange={e=>u('type',e.target.value)}>{JTYPES.map(t=><option key={t}>{t}</option>)}</select></div>
+            <div className="fld"><label>Status</label><select value={f.status} onChange={e=>u('status',e.target.value)}>{JSTATUS.map(s=><option key={s.k}>{s.k}</option>)}</select></div>
+          </div>
+          <div className="fld"><label>What happened</label>
+            <input value={f.title} onChange={e=>u('title',e.target.value)} placeholder="4th floor supply line let go over the server room"/></div>
+          <div className="f3">
+            <div className="fld"><label>Started</label><input type="date" value={f.started} onChange={e=>u('started',e.target.value)}/></div>
+            <div className="fld"><label>Completed</label><input type="date" value={f.completed} onChange={e=>u('completed',e.target.value)}/></div>
+            <div className="fld"><label>On site in (minutes)</label>
+              <input type="number" value={f.responseMins} onChange={e=>u('responseMins',e.target.value)} placeholder="47"/></div>
+          </div>
+          <div className="hint" style={{marginTop:-4}}>
+            Response time is the number that goes in the quarterly value report. It's the thing they hired us for — log it honestly, even when it's bad.
+          </div>
+          <div className="fld"><label>Cause of loss</label>
+            <input value={f.cause} onChange={e=>u('cause',e.target.value)} placeholder="1998 water heater, no drain pan — the exact thing the vulnerability analysis flagged"/></div>
+          <div className="f3">
+            <div className="fld"><label>Carrier</label><input value={f.carrier} onChange={e=>u('carrier',e.target.value)} placeholder="Travelers"/></div>
+            <div className="fld"><label>Adjuster</label><input value={f.adjuster} onChange={e=>u('adjuster',e.target.value)}/></div>
+            <div className="fld"><label>Claim number</label><input value={f.claim} onChange={e=>u('claim',e.target.value)}/></div>
+          </div>
+
+          <Sect t="Who worked it" sub="Subs on this job. Pulled from the vendor directory."/>
+          <div className="chips" style={{marginBottom:14}}>
+            {V.filter(v=>v.ourSub).length===0 && <span className="hint">No subs in the directory yet. Add them on the Vendors tab.</span>}
+            {V.filter(v=>v.ourSub).map(v=>{
+              const on=(f.vids||[]).includes(v.id);
+              return <button key={v.id} className={'chip'+(on?' on':'')}
+                onClick={()=>u('vids', on? f.vids.filter(x=>x!==v.id) : [...(f.vids||[]),v.id])}>
+                {v.name} <b>{v.cat.split(' /')[0]}</b>
+              </button>;
+            })}
+          </div>
+
+          <div className="fld"><label>Notes</label>
+            <textarea rows="3" value={f.notes} onChange={e=>u('notes',e.target.value)}
+              placeholder="Manager was on vacation. The engineer let us in at 2:40am because he had our cell from the walkthrough."/></div>
+        </>}
+
+        {tab==='money' && <>
+          <div className="jsum">
+            <div><span className="hint">Billed</span><b className="mono">{money(rev)}</b></div>
+            <div><span className="hint">Cost</span><b className="mono">{money(cost)}</b></div>
+            <div><span className="hint">Gross profit</span>
+              <b className="mono" style={{color:gp>=0?'var(--go)':'var(--alarm)'}}>{money(gp)}</b></div>
+            <div><span className="hint">Margin</span>
+              <b className="mono" style={{color:pc==null?'var(--mute)':pc>=40?'var(--go)':pc>=25?'var(--water)':'var(--alarm)'}}>
+                {pc==null?'—':pc+'%'}</b></div>
+          </div>
+
+          <MoneyRows rows={f.revenue} kinds={RKIND} onChange={r=>u('revenue',r)} meta={meta}
+            what="What we billed" hint="Attach the invoice or the Xactimate. The number and the paper live together."/>
+
+          <MoneyRows rows={f.costs} kinds={CKIND} onChange={r=>u('costs',r)} meta={meta}
+            what="What it cost us" hint="Sub invoices, receipts, equipment, labor. Build it up from documents — a margin you typed from memory is one you'll discover was wrong at year end."/>
+
+          {rev>0 && cost===0 && <div className="note" style={{marginTop:12}}>
+            No costs logged yet, so this job looks like 100% margin. It isn't. Add the sub invoices and the equipment before you trust this number.
+          </div>}
+          {pc!=null && pc<25 && cost>0 && <div className="note" style={{marginTop:12,background:'#FDF1EF',borderLeftColor:'var(--alarm)'}}>
+            <b>Margin is {pc}%.</b> Worth understanding why before the next one like it — was it the scope, the sub, or the estimate?
+          </div>}
+        </>}
+
+        {tab==='files' && <>
+          <Sect t="Documents" sub="Xactimate estimates, signed authorizations, moisture logs, carrier correspondence, the certificate of completion. Anything you'd need if the claim gets disputed."/>
+          <Docs list={f.docs||[]} onChange={d=>u('docs',d)} meta={meta} label="+ Add a document"/>
+          <div className="hint" style={{marginTop:10}}>
+            Up to 25MB each. PDFs stay as PDFs — nothing gets compressed into uselessness.
+          </div>
+        </>}
+
+        {tab==='photos' && <>
+          <Sect t="Job photos" sub="Before, during, after. This is the proof you show the next prospect — a real job, real timeline, real outcome."/>
+          <Docs list={f.photos||[]} onChange={p=>u('photos',p)} meta={meta} accept="image/*" label="📷 Photo"/>
+        </>}
+      </div>
+
+      <div className="foot">
+        <button className="btn dang" style={{marginRight:'auto'}}
+          onClick={()=>{if(confirm(`Delete ${f.ref||'this job'}? The documents go too.`))onDelete(f.id);}}>Delete job</button>
+        <button className="btn pri" onClick={onClose}>Done</button>
+      </div>
+    </div>
+  </div>;
+}
+
+/* ---- the history: every job we've done ---- */
+function Jobs({J,A,V,onSaveJob,onDeleteJob,go}){
+  const [open,setOpen]=useState(null);
+  const [q,setQ]=useState(''),[st,setSt]=useState(''),[ty,setTy]=useState('');
+
+  const signed=A.filter(a=>stageIx(a.stage)>=4);
+  const acctOf=j=>A.find(a=>a.id===j.acctId);
+  const bldgOf=j=>{const a=acctOf(j);return a&&(a.bldgs||[]).find(b=>b.id===j.bldgId);};
+
+  const list=useMemo(()=>J.filter(j=>{
+    const a=acctOf(j);
+    return (!q||`${a?.name||''} ${j.ref} ${j.title} ${j.claim}`.toLowerCase().includes(q.toLowerCase()))
+        && (!st||j.status===st) && (!ty||j.type===ty);
+  }).sort((x,y)=>(y.started||'').localeCompare(x.started||'')),[J,q,st,ty,A]);
+
+  const rev=sum(list.map(j=>({amount:jobRev(j)})));
+  const cost=sum(list.map(j=>({amount:jobCost(j)})));
+  const gp=rev-cost;
+  const pc=rev? Math.round(gp/rev*100):null;
+  const open_=list.filter(j=>j.status==='Active').length;
+  const unpaid=list.filter(j=>j.status==='Invoiced'||j.status==='Disputed');
+  const owed=sum(unpaid.map(j=>({amount:jobRev(j)})));
+
+  const add=()=>{
+    if(!signed.length){ alert('No signed clients yet. Jobs attach to an account.'); return; }
+    setOpen(newJob(signed[0].id,''));
+  };
+
+  if(!J.length) return <div className="card"><div className="empty">
+    <b>No jobs logged</b>
+    Every project you do at a property — what it was, what it cost, what you billed, and the paper behind it.
+    This is what the quarterly value report is built from, and it's the proof you show the next prospect.
+    <div style={{marginTop:14}}><button className="btn pri" onClick={add}>Log the first job</button></div>
+  </div></div>;
+
+  return <div className="grid">
+    <div className="kpis">
+      <Kpi lab="Billed" val={money(rev)} sub={`${list.length} job${list.length===1?'':'s'}`}/>
+      <Kpi lab="Gross profit" val={money(gp)} sub={pc!=null?`${pc}% margin`:'no revenue yet'} cls={pc==null?'':pc>=40?'go':pc>=25?'':'al'}/>
+      <Kpi lab="Active" val={open_} sub="jobs running now" cls="hz"/>
+      <Kpi lab="Waiting on payment" val={money(owed)} sub={`${unpaid.length} invoiced or disputed`} cls={owed?'al':''}/>
+    </div>
+
+    <div className="card">
+      <h3>Job history <span className="mono" style={{fontSize:12,color:'var(--mute)'}}>{list.length}</span>
+        <button className="btn sm pri" style={{marginLeft:'auto'}} onClick={add}>+ Log a job</button>
+      </h3>
+      <div className="body">
+        <div className="bar">
+          <input placeholder="Search jobs…" value={q} onChange={e=>setQ(e.target.value)} style={{minWidth:200}}/>
+          <select value={st} onChange={e=>setSt(e.target.value)}><option value="">All statuses</option>{JSTATUS.map(s=><option key={s.k}>{s.k}</option>)}</select>
+          <select value={ty} onChange={e=>setTy(e.target.value)}><option value="">All types</option>{JTYPES.map(t=><option key={t}>{t}</option>)}</select>
+        </div>
+
+        <div style={{overflowX:'auto'}}>
+        <table>
+          <thead><tr><th>Job</th><th>Client</th><th>Type</th><th>Started</th><th>Billed</th><th>Cost</th><th>GP</th><th>Status</th><th></th></tr></thead>
+          <tbody>{list.map(j=>{
+            const a=acctOf(j), b=bldgOf(j);
+            const r=jobRev(j), c=jobCost(j), g=r-c, p=jobGPpc(j);
+            return <tr key={j.id}>
+              <td><b style={{cursor:'pointer'}} onClick={()=>setOpen(j)}>{j.ref||'(no number)'}</b>
+                <div className="hint" style={{maxWidth:220,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{j.title||'—'}</div></td>
+              <td>{a?a.name:<span className="hint">deleted</span>}<div className="hint">{b?b.name:''}</div></td>
+              <td><span className="tag">{j.type.split(' ')[0]}</span></td>
+              <td className="mono" style={{fontSize:11.5}}>{j.started||'—'}</td>
+              <td className="mono">{money(r)}</td>
+              <td className="mono" style={{color:c?'var(--ink)':'var(--mute)'}}>{c?money(c):'—'}</td>
+              <td className="mono" style={{fontWeight:700,color:p==null?'var(--mute)':p>=40?'var(--go)':p>=25?'var(--water)':'var(--alarm)'}}>
+                {r? <>{money(g)}<div className="hint" style={{fontFamily:'Inter'}}>{p}%</div></> : '—'}</td>
+              <td><span className="tag" style={{background:jsC(j.status),color:'#fff'}}>{j.status}</span></td>
+              <td><button className="btn sm" onClick={()=>setOpen(j)}>Open</button></td>
+            </tr>;})}
+          </tbody>
+        </table></div>
+
+        <div className="hint" style={{marginTop:10}}>
+          Margin is only as honest as the costs you log. A job showing 100% is a job missing its sub invoices.
+        </div>
+      </div>
+    </div>
+
+    {open && <JobShell j={open} A={A} V={V} signed={signed}
+      onSave={onSaveJob} onClose={()=>setOpen(null)}
+      onDelete={id=>{onDeleteJob(id);setOpen(null);}}/>}
+  </div>;
+}
+
+/* picks the account/building first if the job is new */
+function JobShell({j,A,V,signed,onSave,onClose,onDelete}){
+  const [f,setF]=useState(j);
+  const a=A.find(x=>x.id===f.acctId);
+  const bl=a?(a.bldgs||[]):[];
+  const b=bl.find(x=>x.id===f.bldgId);
+  const isNew=!j.ref && !jobRev(j) && !(j.docs||[]).length;
+
+  if(isNew && !f._ready) return <div className="modal" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <div className="sheet" onMouseDown={e=>e.stopPropagation()}>
+      <h2>Log a job</h2>
+      <div className="body">
+        <div className="fld"><label>Which client</label>
+          <select value={f.acctId} onChange={e=>setF({...f,acctId:e.target.value,bldgId:''})}>
+            {signed.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}
+          </select></div>
+        <div className="fld"><label>Which building</label>
+          <select value={f.bldgId} onChange={e=>setF({...f,bldgId:e.target.value})}>
+            <option value="">— not building-specific —</option>
+            {bl.map(x=><option key={x.id} value={x.id}>{x.name||'Untitled'}</option>)}
+          </select>
+          {!bl.length && <div className="hint">This client has no buildings logged yet. That's fine — you can attach the job to the account.</div>}
+        </div>
+      </div>
+      <div className="foot">
+        <button className="btn dk" onClick={onClose}>Cancel</button>
+        <button className="btn pri" onClick={()=>{const nf={...f,_ready:true};setF(nf);onSave(nf);}}>Continue</button>
+      </div>
+    </div>
+  </div>;
+
+  return <Job j={f} a={a} b={b} V={V} onSave={x=>{setF(x);onSave(x);}} onClose={onClose} onDelete={onDelete}/>;
+}
+
+/* ---- VENDOR DIRECTORY ---- 
+   One record per vendor company. Buildings link by id. Two jobs:
+   the subcontractor bench, and the referral pipeline. A plumber on a
+   client's vendor list is standing in the building at the moment of loss —
+   that's the best referral source there is, and right now they're calling
+   somebody else. */
+
+const VCATS=[
+  {k:'Plumber',        ref:true,  d:'In the building when the pipe lets go. The best referral source we have.'},
+  {k:'Electrician',    ref:true,  d:''},
+  {k:'HVAC',           ref:true,  d:''},
+  {k:'Fire / sprinkler',ref:true, d:'Sprinkler discharges are our work. They find them first.'},
+  {k:'Roofer',         ref:true,  d:'Roof leaks become ceiling losses.'},
+  {k:'General contractor',ref:true,d:''},
+  {k:'Elevator',       ref:false, d:''},
+  {k:'Alarm / monitoring',ref:true,d:'The alarm fires before anyone is on site.'},
+  {k:'Janitorial / facilities',ref:true,d:'Night crew finds the water first.'},
+  {k:'Landscaper / irrigation',ref:false,d:''},
+  {k:'Insurance carrier',ref:false,d:''},
+  {k:'Insurance agent',ref:true, d:'They tell the client who to call.'},
+  {k:'Adjuster / TPA',  ref:true, d:''},
+  {k:'Indoor environmental pro (IEP)',ref:false,d:'We do not clear what we remediate. Keep them independent.'},
+  {k:'Abatement — asbestos / lead',ref:false,d:''},
+  {k:'Structural engineer',ref:false,d:''},
+  {k:'Locksmith',      ref:false,d:''},
+  {k:'Security',       ref:false,d:''},
+  {k:'Other',          ref:false,d:''},
+];
+const catRef=k=>(VCATS.find(c=>c.k===k)||{}).ref;
+const newVendor=()=>({id:'v_'+uid(),name:'',cat:VCATS[0].k,contact:'',title:'',phone:'',afterHours:'',email:'',
+  market:MARKETS[0],license:'',insured:false,ourSub:false,theirVendor:true,referralAcctId:'',rating:0,notes:'',created:today()});
+
+/* every building that links to this vendor */
+function vendorSites(vid,A){
+  const out=[];
+  A.forEach(a=>(a.bldgs||[]).forEach(b=>{
+    if((b.vendors||[]).some(x=>x.vid===vid)) out.push({a,b});
+  }));
+  return out;
+}
+
+function Vendors({V,A,onSaveVendor,onDeleteVendor,onSaveAccount,go}){
+  const [q,setQ]=useState(''),[cat,setCat]=useState(''),[view,setView]=useState('all');
+  const [edit,setEdit]=useState(null);
+
+  const counts=useMemo(()=>{
+    const m={}; V.forEach(v=>{m[v.cat]=(m[v.cat]||0)+1;});
+    return VCATS.filter(c=>m[c.k]).map(c=>[c.k,m[c.k]]);
+  },[V]);
+
+  const list=useMemo(()=>{
+    let L=V.filter(v=>
+      (!q||`${v.name} ${v.contact} ${v.phone} ${v.notes}`.toLowerCase().includes(q.toLowerCase())) &&
+      (!cat||v.cat===cat) &&
+      (view!=='sub'||v.ourSub) &&
+      (view!=='ref'||(catRef(v.cat)&&!v.referralAcctId)) &&
+      (view!=='signed'||v.referralAcctId)
+    );
+    return L.map(v=>({...v,sites:vendorSites(v.id,A).length}))
+            .sort((a,b)=> b.sites-a.sites || a.name.localeCompare(b.name));
+  },[V,q,cat,view,A]);
+
+  // the pitch: vendors touching the most of our buildings, who aren't referral partners yet
+  const opportunity=useMemo(()=>
+    V.map(v=>({...v,sites:vendorSites(v.id,A).length}))
+     .filter(v=>catRef(v.cat)&&!v.referralAcctId&&v.sites>0)
+     .sort((a,b)=>b.sites-a.sites).slice(0,5)
+  ,[V,A]);
+
+  const subs=V.filter(v=>v.ourSub).length;
+  const linked=V.filter(v=>vendorSites(v.id,A).length>0).length;
+  const partners=V.filter(v=>v.referralAcctId).length;
+
+  /* Push a vendor onto the BD board as a referral target. */
+  const toBoard=v=>{
+    const sites=vendorSites(v.id,A);
+    const where=sites.slice(0,6).map(s=>`• ${s.a.name} — ${s.b.name||'building'}`).join('\n');
+    const acct={
+      id:uid(), name:v.name,
+      vertical: v.cat==='Plumber'? 'Plumbing Partner'
+              : /insur|adjust/i.test(v.cat)? 'Insurance / Adjuster'
+              : /contractor/i.test(v.cat)? 'General Contractor' : 'Other',
+      market:v.market, contact:v.contact, title:v.title, phone:v.phone, email:v.email,
+      stage:'lead', doors:0, last:'', next:'Call about a referral partnership',
+      notes:[
+        `Referral target — ${v.cat}.`,
+        sites.length? `Already inside ${sites.length} of our building${sites.length===1?'':'s'}:\n${where}${sites.length>6?`\n…and ${sites.length-6} more`:''}` : '',
+        `They are in the building at the moment of loss. Right now the customer is googling "water damage" at 11pm.`,
+        v.notes
+      ].filter(Boolean).join('\n\n'),
+      bldgs:[], created:today()
+    };
+    onSaveAccount(acct);
+    onSaveVendor({...v, referralAcctId:acct.id});
+    alert(`${v.name} is on the board as a Lead.\n\nThe pitch is in the notes: they're already inside ${sites.length} of your buildings.`);
+  };
+
+  return <div className="grid">
+    <div className="kpis">
+      <Kpi lab="Vendors" val={V.length} sub={`${linked} attached to a building`}/>
+      <Kpi lab="Our subcontractors" val={subs} sub="we hire these" cls="hz"/>
+      <Kpi lab="Referral partners" val={partners} sub="on the BD board" cls={partners?'go':''}/>
+      <Kpi lab="Referral targets" val={opportunity.length} sub="inside our buildings, not ours yet" cls={opportunity.length?'al':''}/>
+    </div>
+
+    {opportunity.length>0 && <div className="card">
+      <h3>Worth a call
+        <span className="hint" style={{fontWeight:400,textTransform:'none',letterSpacing:0,fontFamily:'Inter'}}>
+          — these vendors are already inside our buildings and aren't sending us work
+        </span>
+      </h3>
+      <div className="body">
+        {opportunity.map(v=><div key={v.id} className="oprow">
+          <div style={{flex:1,minWidth:0}}>
+            <b>{v.name}</b> <span className="tag">{v.cat}</span>
+            <div className="hint">
+              Inside <b>{v.sites}</b> of our building{v.sites===1?'':'s'} · {v.contact||'no contact yet'}{v.phone?` · ${v.phone}`:''}
+            </div>
+          </div>
+          <button className="btn sm pri" onClick={()=>toBoard(v)}>Add as referral target</button>
+        </div>)}
+        <div className="hint" style={{marginTop:8}}>
+          A plumber standing in the building when the pipe breaks is worth more than any list you can buy.{' '}
+          <button className="plink" onClick={()=>go('p-emails')}>The plumbing partner email →</button>
+        </div>
+      </div>
+    </div>}
+
+    <div className="card">
+      <h3>Vendor directory <span className="mono" style={{fontSize:12,color:'var(--mute)'}}>{list.length}</span>
+        <button className="btn sm pri" style={{marginLeft:'auto'}} onClick={()=>setEdit(newVendor())}>+ Add vendor</button>
+      </h3>
+      <div className="body">
+        <div className="filters">
+          <div className="frow">
+            <span className="flabel">Show</span>
+            <div className="chips">
+              {[['all','Everyone'],['sub','Our subs'],['ref','Referral targets'],['signed','Referral partners']].map(([k,l])=>
+                <button key={k} className={'chip'+(view===k?' on':'')} onClick={()=>setView(k)}>{l}</button>)}
+            </div>
+          </div>
+          <div className="frow">
+            <span className="flabel">Trade</span>
+            <div className="chips">
+              <button className={'chip'+(!cat?' on':'')} onClick={()=>setCat('')}>All</button>
+              {counts.map(([c,n])=><button key={c} className={'chip'+(cat===c?' on':'')} onClick={()=>setCat(cat===c?'':c)}>
+                {c.split(' /')[0]} <b>{n}</b></button>)}
+            </div>
+          </div>
+          <div className="frow">
+            <input placeholder="Search vendors…" value={q} onChange={e=>setQ(e.target.value)} style={{maxWidth:240}}/>
+          </div>
+        </div>
+
+        {!list.length ? <div className="empty">
+          <b>{V.length? 'Nothing matches' : 'No vendors yet'}</b>
+          {V.length? 'Clear a filter.' : "Add the plumber you already use, then start logging the ones your clients use — that's where the referrals are."}
+        </div> :
+        <div style={{overflowX:'auto'}}>
+        <table>
+          <thead><tr><th>Vendor</th><th>Trade</th><th>Contact</th><th>Phone</th><th>Buildings</th><th>Role</th><th></th></tr></thead>
+          <tbody>{list.map(v=>{
+            const sites=vendorSites(v.id,A);
+            return <tr key={v.id}>
+              <td><b style={{cursor:'pointer'}} onClick={()=>setEdit(v)}>{v.name}</b>
+                <div className="hint">{v.market}{v.license?` · ${v.license}`:''}</div></td>
+              <td><span className="tag">{v.cat}</span></td>
+              <td>{v.contact||<span className="hint">—</span>}<div className="hint">{v.title}</div></td>
+              <td className="mono" style={{fontSize:11.5}}>{v.phone||'—'}{v.afterHours&&<div className="hint" style={{fontFamily:'Inter'}}>24h: {v.afterHours}</div>}</td>
+              <td>{sites.length? <span className="tag w" title={sites.map(s=>`${s.a.name} — ${s.b.name}`).join('\n')}>{sites.length}</span> : <span className="hint">—</span>}</td>
+              <td><div className="row" style={{gap:4}}>
+                {v.ourSub && <span className="tag g">Our sub</span>}
+                {v.referralAcctId && <span className="tag y">Partner</span>}
+                {catRef(v.cat)&&!v.referralAcctId&&sites.length>0 && <span className="tag r">Target</span>}
+              </div></td>
+              <td><button className="btn sm" onClick={()=>setEdit(v)}>Open</button></td>
+            </tr>;})}
+          </tbody>
+        </table></div>}
+      </div>
+    </div>
+
+    {edit && <VendorEdit v={edit} A={A} onClose={()=>setEdit(null)}
+      onSave={v=>{onSaveVendor(v);setEdit(null);}}
+      onDelete={id=>{onDeleteVendor(id);setEdit(null);}}
+      onToBoard={toBoard}/>}
+  </div>;
+}
+
+function VendorEdit({v,A,onSave,onClose,onDelete,onToBoard}){
+  const [f,setF]=useState(v);
+  const u=(k,x)=>setF(p=>({...p,[k]:x}));
+  const sites=vendorSites(f.id,A);
+  const cat=VCATS.find(c=>c.k===f.cat);
+  const save=()=>{ if(!f.name.trim()){alert('Give the vendor a company name.');return;} onSave(f); };
+
+  return <div className="modal" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <div className="sheet" onMouseDown={e=>e.stopPropagation()}>
+      <h2>{v.name||'New vendor'}</h2>
+      <div className="body">
+        <div className="f2">
+          <div className="fld"><label>Company</label>
+            <input autoFocus value={f.name} onChange={e=>u('name',e.target.value)} placeholder="Delta Plumbing & Rooter"/></div>
+          <div className="fld"><label>Trade</label>
+            <select value={f.cat} onChange={e=>u('cat',e.target.value)}>{VCATS.map(c=><option key={c.k}>{c.k}</option>)}</select></div>
+        </div>
+        {cat?.d && <div className="hint" style={{marginTop:-6}}>{cat.d}</div>}
+
+        <div className="f2">
+          <div className="fld"><label>Contact</label><input value={f.contact} onChange={e=>u('contact',e.target.value)} placeholder="Ray Ortiz"/></div>
+          <div className="fld"><label>Title</label><input value={f.title} onChange={e=>u('title',e.target.value)} placeholder="Owner"/></div>
+        </div>
+        <div className="f2">
+          <div className="fld"><label>Phone</label><input value={f.phone} onChange={e=>u('phone',e.target.value)}/></div>
+          <div className="fld"><label>After hours / 24h line</label><input value={f.afterHours} onChange={e=>u('afterHours',e.target.value)}/></div>
+        </div>
+        <div className="f2">
+          <div className="fld"><label>Email</label><input value={f.email} onChange={e=>u('email',e.target.value)}/></div>
+          <div className="fld"><label>Market</label><select value={f.market} onChange={e=>u('market',e.target.value)}>{MARKETS.map(m=><option key={m}>{m}</option>)}</select></div>
+        </div>
+        <div className="f2">
+          <div className="fld"><label>License #</label><input value={f.license} onChange={e=>u('license',e.target.value)} placeholder="C36-998211"/></div>
+          <div className="fld"><label>Rating</label>
+            <select value={f.rating} onChange={e=>u('rating',+e.target.value)}>
+              <option value="0">Not rated</option><option value="1">1 — avoid</option><option value="2">2</option>
+              <option value="3">3 — fine</option><option value="4">4</option><option value="5">5 — first call</option>
+            </select></div>
+        </div>
+
+        <div>
+          <label style={{fontSize:10,textTransform:'uppercase',letterSpacing:'.09em',color:'var(--mute)',fontWeight:600,display:'block',marginBottom:6}}>What are they to us?</label>
+          <div className="grid" style={{gap:6}}>
+            <label className={'tick'+(f.ourSub?' done':'')}>
+              <input type="checkbox" checked={f.ourSub} onChange={e=>u('ourSub',e.target.checked)}/>
+              <span className="t"><b>We hire them</b> — on our subcontractor bench</span></label>
+            <label className={'tick'+(f.insured?' done':'')}>
+              <input type="checkbox" checked={f.insured} onChange={e=>u('insured',e.target.checked)}/>
+              <span className="t">Certificate of insurance on file</span></label>
+            <label className={'tick'+(f.theirVendor?' done':'')}>
+              <input type="checkbox" checked={f.theirVendor} onChange={e=>u('theirVendor',e.target.checked)}/>
+              <span className="t">Our clients use them — attach to buildings below</span></label>
+          </div>
+        </div>
+
+        <div className="fld"><label>Notes</label>
+          <textarea rows="2" value={f.notes} onChange={e=>u('notes',e.target.value)}
+            placeholder="6 trucks. Sends losses to a national call center today. Ray's brother runs the shop in Concord."/></div>
+
+        <div className="vsites">
+          <div className="disp" style={{fontSize:15,marginBottom:6}}>
+            Inside {sites.length} of our building{sites.length===1?'':'s'}
+          </div>
+          {sites.length? <>
+            {sites.slice(0,8).map(({a,b})=><div key={b.id} className="hint" style={{padding:'2px 0'}}>
+              • <b style={{color:'var(--ink)'}}>{a.name}</b> — {b.name||'building'}
+            </div>)}
+            {sites.length>8 && <div className="hint">…and {sites.length-8} more</div>}
+          </> : <div className="hint">Not attached to any building yet. Add them from a building's Stage 3 in Data mining.</div>}
+
+          {catRef(f.cat) && !f.referralAcctId && <div style={{marginTop:10,paddingTop:10,borderTop:'1px solid var(--line)'}}>
+            <div className="hint" style={{marginBottom:7}}>
+              {sites.length
+                ? <>They're standing in <b>{sites.length}</b> of our buildings. Right now the customer is calling somebody else at 11pm.</>
+                : <>A {f.cat.toLowerCase()} is a referral channel whether or not they're on one of our buildings.</>}
+            </div>
+            <button className="btn pri" style={{width:'100%'}} onClick={()=>{onSave(f);onToBoard(f);}}>
+              Add to the BD board as a referral target →
+            </button>
+          </div>}
+          {f.referralAcctId && <div className="hint" style={{marginTop:10,paddingTop:10,borderTop:'1px solid var(--line)',color:'var(--go)',fontWeight:600}}>
+            ✓ On the BD board as a referral partner.
+          </div>}
+        </div>
+      </div>
+      <div className="foot">
+        {v.name && <button className="btn dang" style={{marginRight:'auto'}}
+          onClick={()=>{if(confirm(`Delete ${v.name}? Buildings that link to them will lose the link.`))onDelete(v.id);}}>Delete</button>}
+        <button className="btn dk" onClick={onClose}>Cancel</button>
+        <button className="btn pri" onClick={save}>Save vendor</button>
+      </div>
+    </div>
+  </div>;
+}
+
+/* attach vendors to a building — replaces the old free-text list */
+function BldgVendors({b,V,onChange,onNewVendor}){
+  const linked=(b.vendors||[]).filter(x=>x.vid);
+  const [pick,setPick]=useState(false);
+  const [q,setQ]=useState('');
+
+  const avail=V.filter(v=>!linked.some(l=>l.vid===v.id) &&
+    (!q||`${v.name} ${v.cat}`.toLowerCase().includes(q.toLowerCase())));
+
+  return <>
+    <Sect t="Vendors on this building" sub="Who does this client already use? We do not compete with them — we call them, and we make them look good. Every one of these is also a referral channel."
+      add={()=>setPick(true)} addLab="+ Attach a vendor"/>
+
+    {!linked.length && <div className="hint" style={{padding:'6px 0 12px'}}>
+      None linked. Ask on the walkthrough: "Who's your plumber?" That's the most valuable question in the building.
+    </div>}
+
+    {linked.map((l,i)=>{
+      const v=V.find(x=>x.id===l.vid);
+      if(!v) return <div key={i} className="rowcard"><div className="row" style={{justifyContent:'space-between'}}>
+        <span className="hint">This vendor was deleted from the directory.</span>
+        <button className="btn sm dang" onClick={()=>onChange(linked.filter((_,j)=>j!==i))}>Remove</button>
+      </div></div>;
+      return <div key={l.vid} className="rowcard">
+        <div className="row" style={{justifyContent:'space-between',gap:10}}>
+          <div style={{flex:1,minWidth:0}}>
+            <b>{v.name}</b> <span className="tag">{v.cat}</span>
+            {v.referralAcctId && <span className="tag y" style={{marginLeft:4}}>Referral partner</span>}
+            {catRef(v.cat)&&!v.referralAcctId && <span className="tag r" style={{marginLeft:4}}>Not ours yet</span>}
+            <div className="hint">
+              {v.contact||'no contact'}{v.phone?` · ${v.phone}`:''}{v.afterHours?` · 24h ${v.afterHours}`:''}
+            </div>
+          </div>
+          <button className="btn sm dang" onClick={()=>onChange(linked.filter((_,j)=>j!==i))}>Remove</button>
+        </div>
+      </div>;
+    })}
+
+    {pick && <div className="modal" onMouseDown={e=>{if(e.target===e.currentTarget)setPick(false);}}>
+      <div className="sheet" onMouseDown={e=>e.stopPropagation()}>
+        <h2>Attach a vendor</h2>
+        <div className="body">
+          <input autoFocus placeholder="Search the directory…" value={q} onChange={e=>setQ(e.target.value)}/>
+          <div style={{maxHeight:'40vh',overflow:'auto',border:'1px solid var(--line)',borderRadius:3}}>
+            {!avail.length ? <div className="empty" style={{padding:20}}>
+              <b>{V.length?'No match':'The directory is empty'}</b>
+              Add them as a new vendor below.
+            </div> :
+            avail.slice(0,40).map(v=><div key={v.id} className="subrow" style={{margin:0,border:'none',borderBottom:'1px solid #EDF0F2',borderRadius:0}}
+              onClick={()=>{onChange([...linked,{vid:v.id,role:v.cat}]);setPick(false);setQ('');}}>
+              <div style={{flex:1}}>
+                <b>{v.name}</b> <span className="tag">{v.cat}</span>
+                <div className="hint">{v.contact}{v.phone?` · ${v.phone}`:''}</div>
+              </div>
+              <button className="btn sm pri">Attach</button>
+            </div>)}
+          </div>
+        </div>
+        <div className="foot">
+          <button className="btn" style={{marginRight:'auto'}} onClick={()=>{setPick(false);onNewVendor();}}>+ New vendor</button>
+          <button className="btn dk" onClick={()=>setPick(false)}>Cancel</button>
+        </div>
+      </div>
+    </div>}
+  </>;
+}
+
+/* ---- client portal: send the link, review what comes back ---- */
+
+function ShareBox({a,b}){
+  const [sh,setSh]=useState(null);
+  const [old,setOld]=useState([]);
+  const [busy,setBusy]=useState(false);
+  const [copied,setCopied]=useState('');
+
+  useEffect(()=>{ Store.listShares(b.id).then(setOld); },[b.id]);
+
+  const make=async()=>{
+    setBusy(true);
+    try{ const r=await Store.createShare(a,b,60); setSh(r); setOld(await Store.listShares(b.id)); }
+    catch(e){ alert(e.message); }
+    setBusy(false);
+  };
+  const copy=(txt,what)=>{ navigator.clipboard?.writeText(txt).then(()=>{setCopied(what);setTimeout(()=>setCopied(''),1500);}); };
+
+  const live=old.filter(x=>!x.revoked && (!x.expires_at || new Date(x.expires_at)>new Date()));
+
+  const email = sh ? `Subject: Your building profile — ${b.name||'the building'}
+
+Hi —
+
+Here's the link to your building profile. It takes about ten minutes, and it's the part of the response plan only you can fill in: where the shutoffs are, who to call, and how we get in the door at 2am.
+
+Link: ${sh.url}
+Access code: ${sh.code}
+
+Fill in what you know and skip what you don't — we'll catch the rest on the walkthrough. Photos of the valves help more than anything else.
+
+Allied Restoration Company · (415) 529-5637 · 24/7/365` : '';
+
+  return <div className="sharebox">
+    {!sh ? <>
+      <div className="row" style={{justifyContent:'space-between'}}>
+        <div>
+          <div className="disp" style={{fontSize:16}}>Have the client fill it in</div>
+          <div className="hint">They know where the valves are. A manager who spent an hour on their own plan doesn't switch vendors.</div>
+        </div>
+        <button className="btn pri" onClick={make} disabled={busy}>{busy?'Creating…':'Create a link'}</button>
+      </div>
+      {live.length>0 && <div className="hint" style={{marginTop:8,paddingTop:8,borderTop:'1px solid var(--line)'}}>
+        {live.length} link{live.length===1?'':'s'} already active for this building.
+        {live.map(x=><span key={x.token}> · <b>{x.code}</b> ({x.views} view{x.views===1?'':'s'})
+          <button className="plink" style={{marginLeft:4}} onClick={async()=>{await Store.revokeShare(x.token);setOld(await Store.listShares(b.id));}}>revoke</button>
+        </span>)}
+      </div>}
+    </> : <>
+      <div className="disp" style={{fontSize:16,marginBottom:8}}>Link is live</div>
+      <div className="f2" style={{marginBottom:10}}>
+        <div className="fld"><label>Send them this</label>
+          <input readOnly value={sh.url} onFocus={e=>e.target.select()}/></div>
+        <div className="fld"><label>And tell them this code</label>
+          <input readOnly value={sh.code} style={{fontFamily:'JetBrains Mono',fontWeight:700,fontSize:17,letterSpacing:'.1em',textAlign:'center'}}/></div>
+      </div>
+      <div className="row" style={{gap:8}}>
+        <button className="btn sm" onClick={()=>copy(sh.url,'link')}>Copy link</button>
+        <button className="btn sm" onClick={()=>copy(sh.code,'code')}>Copy code</button>
+        <button className="btn sm pri" onClick={()=>copy(email,'email')}>Copy the whole email</button>
+        {copied && <span className="copied">Copied the {copied}</span>}
+      </div>
+      <div className="hint" style={{marginTop:8}}>
+        Send the code separately from the link — a text or a phone call. Expires in 60 days. It's a
+        working document, so send it before the walkthrough, not after.
+      </div>
+    </>}
+  </div>;
+}
+
+/* what the client sent back */
+function Inbox({A,onSave,go}){
+  const [subs,setSubs]=useState(null);
+  const [open,setOpen]=useState(null);
+  const load=()=>Store.pendingSubmissions().then(setSubs);
+  useEffect(()=>{load();},[]);
+
+  if(subs===null) return <div className="card"><div className="empty">Checking for submissions…</div></div>;
+  if(!subs.length) return <div className="card"><div className="empty">
+    <b>Nothing waiting</b>
+    When a client fills in their building profile, it lands here for review before it touches the plan.
+    Create a link from any building in <b>Data mining</b>.
+  </div></div>;
+
+  const acctOf=s=>A.find(a=>a.id===s.account_id);
+  const bldgOf=s=>{const a=acctOf(s);return a&&(a.bldgs||[]).find(b=>b.id===s.building_id);};
+
+  return <div className="grid">
+    <div className="card">
+      <h3>From clients <span className="mono" style={{fontSize:12,color:'var(--mute)'}}>{subs.length} waiting</span></h3>
+      <div className="body">
+        <div className="hint" style={{marginBottom:12}}>
+          Nothing here is live yet. Read it, then accept the fields you want. Their vulnerability
+          analysis is not theirs to write — we keep that.
+        </div>
+        {subs.map(s=>{
+          const a=acctOf(s), b=bldgOf(s);
+          return <div key={s.id} className="subrow" onClick={()=>setOpen(s)}>
+            <div style={{flex:1,minWidth:0}}>
+              <b>{a?a.name:'(account since deleted)'}</b>
+              <span className="hint"> · {b?b.name:'(building since deleted)'}</span>
+              <div className="hint">
+                {s.submitted_by||'someone'} · {new Date(s.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}
+                {s.note && <> · "{s.note}"</>}
+              </div>
+            </div>
+            <div className="row" style={{gap:5,flexWrap:'nowrap'}}>
+              {(s.payload.shutoffs||[]).length>0 && <span className="tag w">{(s.payload.shutoffs||[]).length} shutoffs</span>}
+              {(s.payload.contacts||[]).length>0 && <span className="tag g">{(s.payload.contacts||[]).length} contacts</span>}
+              <button className="btn sm pri">Review</button>
+            </div>
+          </div>;
+        })}
+      </div>
+    </div>
+
+    {open && <Review s={open} a={acctOf(open)} b={bldgOf(open)}
+      onClose={()=>setOpen(null)}
+      onDone={async(merged)=>{
+        if(merged){
+          const a=acctOf(open);
+          onSave({...a, bldgs:a.bldgs.map(x=>x.id===open.building_id?merged:x)});
+        }
+        await load(); setOpen(null);
+      }}/>}
+  </div>;
+}
+
+/* side by side: ours vs theirs, field by field */
+function Review({s,a,b,onClose,onDone}){
+  const theirs=s.payload;
+  const [take,setTake]=useState({});   // which sections we're accepting
+  const [busy,setBusy]=useState(false);
+
+  if(!a||!b) return <div className="modal" onMouseDown={onClose}><div className="sheet" onMouseDown={e=>e.stopPropagation()}>
+    <h2>Can't merge this</h2>
+    <div className="body"><p>The account or building this came from has since been deleted. Nothing to merge into.</p></div>
+    <div className="foot"><button className="btn dang" onClick={async()=>{await Store.reviewSubmission(s.id,'rejected');onDone(null);}}>Discard it</button>
+    <button className="btn dk" onClick={onClose}>Close</button></div>
+  </div></div>;
+
+  const FIELDS=[
+    ['name','Building name'],['address','Address'],['year','Year built'],['sf','Square feet'],
+    ['floors','Floors'],['units','Units'],['sprinklered','Sprinklered'],['alarm','Alarm'],
+  ];
+  const changed=FIELDS.filter(([k])=>String(theirs[k]||'')!==String(b[k]||'') && String(theirs[k]||'').trim());
+  const ACCESS=[['keys','Keys'],['codes','Codes'],['afterHours','After hours'],['elevator','Elevator'],['dock','Dock'],['parking','Parking']];
+  const accessChanged=ACCESS.filter(([k])=>String(theirs.access?.[k]||'')!==String(b.access?.[k]||'') && String(theirs.access?.[k]||'').trim());
+
+  const t=(k,v)=>setTake(p=>({...p,[k]:v}));
+  const on=k=>take[k]!==false;   // default: accept
+
+  const accept=async()=>{
+    setBusy(true);
+    try{
+      const m={...b};
+      if(on('profile')) changed.forEach(([k])=>{ m[k]=theirs[k]; });
+      if(on('access'))  m.access={...b.access, ...Object.fromEntries(accessChanged.map(([k])=>[k,theirs.access[k]]))};
+
+      if(on('shutoffs') && (theirs.shutoffs||[]).length){
+        // adopt their photos into our bucket, then append anything we don't already have
+        const add=[];
+        for(const x of theirs.shutoffs){
+          const dupe=(b.shutoffs||[]).some(y=>y.system===x.system && (y.loc||'').toLowerCase()===(x.loc||'').toLowerCase());
+          if(dupe) continue;
+          const photos=[];
+          for(const p of (x.photos||[])) photos.push(await Store.adoptPhoto(p));
+          add.push({id:uid(),system:x.system,loc:x.loc||'',how:x.how||'',tagged:false,photo:photos.length>0,photos,note:'From the client'});
+        }
+        m.shutoffs=[...(b.shutoffs||[]),...add];
+      }
+      if(on('contacts') && (theirs.contacts||[]).length){
+        const add=theirs.contacts.filter(x=>!(b.contacts||[]).some(y=>(y.name||'').toLowerCase()===(x.name||'').toLowerCase()&&x.name))
+                                 .map(x=>({id:uid(),name:x.name||'',role:x.role||ROLES[0],phone:x.phone||'',afterHours:x.afterHours||'',auth:x.auth||''}));
+        m.contacts=[...(b.contacts||[]),...add];
+      }
+      if(on('vendors') && (theirs.vendors||[]).length){
+        const add=theirs.vendors.filter(x=>!(b.vendors||[]).some(y=>(y.co||'').toLowerCase()===(x.co||'').toLowerCase()&&x.co))
+                                .map(x=>({id:uid(),kind:x.kind||VENDORS[0],co:x.co||'',phone:x.phone||''}));
+        m.vendors=[...(b.vendors||[]),...add];
+      }
+      await Store.reviewSubmission(s.id,'accepted');
+      onDone(m);
+    }catch(e){ alert('Could not merge: '+e.message); setBusy(false); }
+  };
+
+  const Sec=({k,title,n,children})=> <div className={'revsec'+(on(k)?'':' off')}>
+    <label className="chk" style={{marginBottom:8}}>
+      <input type="checkbox" checked={on(k)} onChange={e=>t(k,e.target.checked)}/>
+      <b>{title}</b>{n!=null && <span className="tag w" style={{marginLeft:6}}>{n}</span>}
+    </label>
+    {children}
+  </div>;
+
+  return <div className="modal" onMouseDown={e=>{if(e.target===e.currentTarget&&!busy)onClose();}}>
+    <div className="sheet wide" onMouseDown={e=>e.stopPropagation()}>
+      <h2>{a.name}
+        <span className="hint" style={{fontWeight:400,marginLeft:8,textTransform:'none',letterSpacing:0,fontFamily:'Inter'}}>
+          {b.name} · sent by {s.submitted_by||'a client'}
+        </span>
+      </h2>
+      <div className="body" style={{maxHeight:'62vh',overflow:'auto'}}>
+        {s.note && <div className="note" style={{margin:'0 0 14px'}}><b>They said:</b> "{s.note}"</div>}
+
+        {!changed.length && !accessChanged.length && !(theirs.shutoffs||[]).length
+          && !(theirs.contacts||[]).length && !(theirs.vendors||[]).length
+          ? <div className="hint">They opened it but didn't add anything. Worth a call — the form may have been confusing, or they may not know where the shutoffs are, which is itself useful to know.</div>
+          : <>
+          {changed.length>0 && <Sec k="profile" title="Building details" n={changed.length}>
+            <table><thead><tr><th>Field</th><th>Ours</th><th>Theirs</th></tr></thead><tbody>
+              {changed.map(([k,l])=><tr key={k}>
+                <td style={{fontWeight:600}}>{l}</td>
+                <td className="hint">{b[k]||'—'}</td>
+                <td><b>{theirs[k]}</b></td>
+              </tr>)}
+            </tbody></table>
+          </Sec>}
+
+          {(theirs.shutoffs||[]).length>0 && <Sec k="shutoffs" title="Shutoffs" n={theirs.shutoffs.length}>
+            <table><thead><tr><th>System</th><th>Where</th><th>Notes</th><th>Photos</th></tr></thead><tbody>
+              {theirs.shutoffs.map((x,i)=><tr key={i}>
+                <td><b>{x.system}</b></td><td>{x.loc||'—'}</td><td className="hint">{x.how||'—'}</td>
+                <td>{(x.photos||[]).length? <span className="tag g">{x.photos.length}</span> : <span className="hint">none</span>}</td>
+              </tr>)}
+            </tbody></table>
+            <div className="hint" style={{marginTop:5}}>These come in <b>untagged</b> — the client can tell you where the valve is, but only we can hang the tag. Verify on the walk.</div>
+          </Sec>}
+
+          {(theirs.contacts||[]).length>0 && <Sec k="contacts" title="Contact tree" n={theirs.contacts.length}>
+            <table><thead><tr><th>Name</th><th>Role</th><th>Phone</th><th>After hours</th><th>Authorizes to</th></tr></thead><tbody>
+              {theirs.contacts.map((x,i)=><tr key={i}>
+                <td><b>{x.name||'—'}</b></td><td>{x.role}</td><td className="mono" style={{fontSize:11.5}}>{x.phone||'—'}</td>
+                <td className="mono" style={{fontSize:11.5}}>{x.afterHours||'—'}</td><td>{x.auth||'—'}</td>
+              </tr>)}
+            </tbody></table>
+          </Sec>}
+
+          {accessChanged.length>0 && <Sec k="access" title="Access" n={accessChanged.length}>
+            <table><thead><tr><th>Field</th><th>Ours</th><th>Theirs</th></tr></thead><tbody>
+              {accessChanged.map(([k,l])=><tr key={k}>
+                <td style={{fontWeight:600}}>{l}</td><td className="hint">{b.access?.[k]||'—'}</td><td><b>{theirs.access[k]}</b></td>
+              </tr>)}
+            </tbody></table>
+          </Sec>}
+
+          {(theirs.vendors||[]).length>0 && <Sec k="vendors" title="Their vendors" n={theirs.vendors.length}>
+            <table><thead><tr><th>Type</th><th>Company</th><th>Phone</th></tr></thead><tbody>
+              {theirs.vendors.map((x,i)=><tr key={i}><td>{x.kind}</td><td><b>{x.co||'—'}</b></td><td className="mono" style={{fontSize:11.5}}>{x.phone||'—'}</td></tr>)}
+            </tbody></table>
+          </Sec>}
+        </>}
+      </div>
+      <div className="foot">
+        <button className="btn dang" style={{marginRight:'auto'}} disabled={busy}
+          onClick={async()=>{if(confirm('Discard this submission? The client is not notified.')){await Store.reviewSubmission(s.id,'rejected');onDone(null);}}}>
+          Discard
+        </button>
+        <button className="btn dk" onClick={onClose} disabled={busy}>Close</button>
+        <button className="btn pri" onClick={accept} disabled={busy}>{busy?'Merging…':'Accept into the plan'}</button>
+      </div>
+    </div>
+  </div>;
+}
+
 /* ---------------- DATA MINING ---------------- */
 function StageBar({st,sm}){
   return <div className="dmbar" style={sm?{gap:3}:{}}>
@@ -1836,7 +2893,7 @@ function StageBar({st,sm}){
   </div>;
 }
 
-function Mining({A,onSave,go}){
+function Mining({A,V,onSave,onSaveVendor,go}){
   const [sel,setSel]=useState(null); // {acctId, bldgId}
   const [q,setQ]=useState('');
   const signed=A.filter(a=>stageIx(a.stage)>=4);
@@ -1917,14 +2974,14 @@ function Mining({A,onSave,go}){
       </div>
     </div>
 
-    {cur && <Building a={cur.a} b={cur.b} onClose={()=>setSel(null)}
+    {cur && <Building a={cur.a} b={cur.b} V={V} onSaveVendor={onSaveVendor} onClose={()=>setSel(null)}
       onSave={nb=>onSave({...cur.a,bldgs:cur.a.bldgs.map(x=>x.id===nb.id?nb:x)})}
       onDelete={()=>{onSave({...cur.a,bldgs:cur.a.bldgs.filter(x=>x.id!==cur.b.id)});setSel(null);}}/>}
   </div>;
 }
 
 /* ---- the building record: the actual field tool ---- */
-function Building({a,b,onSave,onClose,onDelete}){
+function Building({a,b,V,onSaveVendor,onSave,onClose,onDelete}){
   const [f,setF]=useState(b);
   const [tab,setTab]=useState('s1');
   useEffect(()=>setF(b),[b.id]);
@@ -2026,6 +3083,7 @@ function Building({a,b,onSave,onClose,onDelete}){
         </>}
 
         {tab==='s3' && <>
+          <ShareBox a={a} b={f}/>
           <Sect t="Contact tree" sub="In order. Who gets called first, who authorizes, who picks up at 2am."
             add={()=>addRow('contacts',{id:uid(),name:'',role:ROLES[0],phone:'',afterHours:'',auth:''})} addLab="+ Add contact"/>
           {!f.contacts.length && <div className="hint" style={{padding:'6px 0 12px'}}>Empty. The building engineer is the most important entry here — not the manager who signed.</div>}
@@ -2041,16 +3099,9 @@ function Building({a,b,onSave,onClose,onDelete}){
             </div>
           </div>)}
 
-          <Sect t="Their vendors" sub="We do not compete with these people. We call them and we make them look good."
-            add={()=>addRow('vendors',{id:uid(),kind:VENDORS[0],co:'',phone:''})} addLab="+ Add vendor"/>
-          {f.vendors.map((x,i)=><div key={x.id} className="rowcard">
-            <div className="row" style={{gap:8,alignItems:'flex-end'}}>
-              <div className="fld" style={{flex:1.5}}><label>Type</label><select value={x.kind} onChange={e=>setRow('vendors',i,{...x,kind:e.target.value})}>{VENDORS.map(v=><option key={v}>{v}</option>)}</select></div>
-              <div className="fld" style={{flex:2}}><label>Company</label><input value={x.co} onChange={e=>setRow('vendors',i,{...x,co:e.target.value})}/></div>
-              <div className="fld" style={{flex:1.5}}><label>Phone</label><input value={x.phone} onChange={e=>setRow('vendors',i,{...x,phone:e.target.value})}/></div>
-              <button className="btn sm dang" onClick={()=>delRow('vendors',i)}>×</button>
-            </div>
-          </div>)}
+          <BldgVendors b={f} V={V}
+            onChange={list=>u('vendors',list)}
+            onNewVendor={()=>{const nv=newVendor();onSaveVendor(nv);u('vendors',[...(f.vendors||[]),{vid:nv.id,role:nv.cat}]);alert('Blank vendor created and attached. Fill it in on the Vendors tab.');}}/>
 
           <Sect t="Pre-signed work authorization" sub="This is the piece that lets us start extracting at 2am instead of waiting for a signature at 9am."/>
           <div className="f3">
@@ -2089,7 +3140,7 @@ function Building({a,b,onSave,onClose,onDelete}){
 
       <div className="foot">
         <button className="btn dang" style={{marginRight:'auto'}} onClick={()=>{if(confirm(`Delete ${f.name||'this building'}?`))onDelete();}}>Delete building</button>
-        <button className="btn" onClick={async()=>{try{await printARP(a,f);}catch(e){alert('Could not build the plan: '+e.message);}}}>Generate response plan</button>
+        <button className="btn" onClick={async()=>{try{await printARP(a,f,V);}catch(e){alert('Could not build the plan: '+e.message);}}}>Generate response plan</button>
         <button className="btn pri" onClick={onClose}>Done</button>
       </div>
     </div>
@@ -2104,7 +3155,7 @@ function Sect({t,sub,add,addLab}){
 }
 
 /* ---- generate the client-facing Allied Response Plan ---- */
-async function printARP(a,b){
+async function printARP(a,b,V=[]){
   const esc=v=>String(v??'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
   const row=(k,v)=>v?`<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`:'';
   const sev=s=>({Critical:'#C6412C',High:'#D98324',Moderate:'#1E7FA6',Low:'#6B7A87'}[s]||'#6B7A87');
@@ -2193,8 +3244,9 @@ ${plans.map(pl=>`<div class="plan">
   ${(pl.pins||[]).length?`<ol class="pinkey">${(pl.pins||[]).map(pn=>`<li>${esc(pn.label)|| esc(({water:'Water shutoff',gas:'Gas shutoff',elec:'Electrical',sprink:'Sprinkler / FDC',access:'Access / key',risk:'Known risk'})[pn.kind]||'Pin')}</li>`).join('')}</ol>`:''}
 </div>`).join('')}`:''}
 
-${b.vendors.length?`<h2>Building vendors</h2><table class="g"><tr><th>Type</th><th>Company</th><th>Phone</th></tr>
-${b.vendors.map(v=>`<tr><td>${esc(v.kind)}</td><td>${esc(v.co)}</td><td>${esc(v.phone)}</td></tr>`).join('')}</table>`:''}
+${(()=>{const L=(b.vendors||[]).map(x=>V.find(v=>v.id===x.vid)).filter(Boolean);
+  return L.length?`<h2>Building vendors</h2><table class="g"><tr><th>Trade</th><th>Company</th><th>Contact</th><th>Phone</th><th>After hours</th></tr>
+${L.map(v=>`<tr><td>${esc(v.cat)}</td><td><b>${esc(v.name)}</b></td><td>${esc(v.contact)||'—'}</td><td>${esc(v.phone)||'—'}</td><td>${esc(v.afterHours)||'—'}</td></tr>`).join('')}</table>`:'';})()}
 
 ${b.vulns.length?`<h2>Vulnerability analysis</h2><table class="g"><tr><th>Where</th><th>What could fail</th><th>Severity</th><th>Est. loss</th><th>Recommendation</th></tr>
 ${b.vulns.map(v=>`<tr><td>${esc(v.system)}</td><td>${esc(v.risk)}</td><td><span class="tag" style="background:${sev(v.sev)}">${esc(v.sev)}</span></td><td>${esc(v.cost)||'—'}</td><td>${esc(v.fix)||'—'}</td></tr>`).join('')}</table>`:''}
@@ -2219,7 +3271,7 @@ ${row('Signed by',b.auth.signer)}
 }
 
 /* ---------------- editor ---------------- */
-function Editor({a,onSave,onClose,onDelete,onGoMine}){
+function Editor({a,J=[],onSave,onClose,onDelete,onGoMine}){
   const [f,setF]=useState({...a,walk:a.walk||{}});
   const u=(k,v)=>setF(p=>({...p,[k]:v}));
   const signed=stageIx(f.stage)>=4;
@@ -2250,6 +3302,32 @@ function Editor({a,onSave,onClose,onDelete,onGoMine}){
         <div className="fld"><label>Next action</label><input value={f.next} onChange={e=>u('next',e.target.value)} placeholder={NEXT_ACTION[f.stage]}/></div>
         <div className="fld"><label>Notes — their words, their last loss, who else decides</label>
           <textarea rows="3" value={f.notes} onChange={e=>u('notes',e.target.value)} placeholder="Had a sprinkler discharge in February. Unhappy with the response time. Board approval needed over $10k."/></div>
+
+        {J.length>0 && (()=>{
+          const rev=J.reduce((n,j)=>n+jobRev(j),0);
+          const gp=J.reduce((n,j)=>n+jobGP(j),0);
+          const pc=rev?Math.round(gp/rev*100):null;
+          const rt=J.map(j=>+j.responseMins).filter(x=>x>0);
+          const avg=rt.length?Math.round(rt.reduce((a,b)=>a+b,0)/rt.length):null;
+          return <div>
+            <label style={{fontSize:10,textTransform:'uppercase',letterSpacing:'.09em',color:'var(--mute)',fontWeight:600,display:'block',marginBottom:6}}>Work history</label>
+            <div className="dmsum">
+              <div className="jsum" style={{marginBottom:0}}>
+                <div><span className="hint">Jobs</span><b className="mono">{J.length}</b></div>
+                <div><span className="hint">Billed</span><b className="mono">{money(rev)}</b></div>
+                <div><span className="hint">GP</span><b className="mono" style={{color:gp>=0?'var(--go)':'var(--alarm)'}}>{money(gp)}{pc!=null?` · ${pc}%`:''}</b></div>
+                <div><span className="hint">Avg response</span><b className="mono">{avg?`${avg} min`:'—'}</b></div>
+              </div>
+              <div className="hint" style={{marginTop:8}}>
+                {avg!=null && avg<=60
+                  ? <>On site in under an hour on average. That's the number for the value report.</>
+                  : avg!=null
+                  ? <>Average response is {avg} minutes. That's the number they'll remember — and the one to fix.</>
+                  : <>No response times logged. That's the metric they hired us for.</>}
+              </div>
+            </div>
+          </div>;
+        })()}
 
         {signed && <div>
           <label style={{fontSize:10,textTransform:'uppercase',letterSpacing:'.09em',color:'var(--mute)',fontWeight:600,display:'block',marginBottom:6}}>Allied Response Plan — data mining</label>
