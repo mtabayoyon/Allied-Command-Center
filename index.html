@@ -1,0 +1,1638 @@
+<div id="root"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="./js/config.js"></script>
+<script src="./js/store.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root{
+  --ink:#0E151C;
+  --slab:#18232E;
+  --slab2:#22303D;
+  --line:#CBD3DA;
+  --line-d:#33434F;
+  --paper:#EDF0F2;
+  --card:#FFFFFF;
+  --mute:#6B7A87;
+  --hiviz:#FFD400;
+  --water:#1E7FA6;
+  --alarm:#C6412C;
+  --go:#2E7D4F;
+  --warn:#D98324;
+}
+*{box-sizing:border-box}
+#root{font-family:'Inter',system-ui,sans-serif;color:var(--ink);background:var(--paper);min-height:100vh;font-size:14px;line-height:1.5}
+h1,h2,h3,.disp{font-family:'Barlow Condensed','Inter',sans-serif;text-transform:uppercase;letter-spacing:.03em;margin:0}
+.mono{font-family:'JetBrains Mono',monospace}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:13px;width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:2px;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--water);outline-offset:-1px}
+
+/* ---- hazard bar signature ---- */
+.hazard{height:6px;background:repeating-linear-gradient(-45deg,var(--hiviz) 0 14px,var(--ink) 14px 28px)}
+
+header.top{background:var(--ink);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.brand{font-family:'Barlow Condensed';font-weight:700;font-size:26px;letter-spacing:.06em;text-transform:uppercase;line-height:1}
+.brand b{color:var(--hiviz)}
+.tagline{font-size:11px;color:#8FA0AD;text-transform:uppercase;letter-spacing:.14em;margin-top:3px}
+.top-right{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{border:1px solid var(--line-d);background:var(--slab2);color:#DDE5EA;padding:7px 12px;border-radius:2px;font-size:12px;font-weight:600;letter-spacing:.03em}
+.btn:hover{background:var(--slab)}
+.btn.pri{background:var(--hiviz);color:var(--ink);border-color:var(--hiviz)}
+.btn.pri:hover{background:#E8C200}
+.btn.gh{background:transparent}
+.btn.sm{padding:4px 8px;font-size:11px}
+.btn.dang{border-color:var(--alarm);color:#F0A79B}
+.btn.dang:hover{background:var(--alarm);color:#fff}
+
+nav.tabs{display:flex;background:var(--slab);border-bottom:1px solid var(--line-d);overflow-x:auto}
+nav.tabs button{background:none;border:none;color:#93A4B1;padding:12px 18px;font-family:'Barlow Condensed';font-size:17px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;border-bottom:3px solid transparent;white-space:nowrap}
+nav.tabs button:hover{color:#fff}
+nav.tabs button.on{color:#fff;border-bottom-color:var(--hiviz);background:var(--slab2)}
+
+main{padding:20px;max-width:1500px;margin:0 auto}
+.grid{display:grid;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:3px}
+.card>h3{padding:10px 14px;border-bottom:1px solid var(--line);font-size:16px;display:flex;align-items:center;gap:8px}
+.card .body{padding:14px}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:#fff;border:1px solid var(--line);border-left:4px solid var(--water);padding:12px 14px;border-radius:3px}
+.kpi .lab{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--mute);font-weight:600}
+.kpi .val{font-family:'Barlow Condensed';font-size:34px;font-weight:700;line-height:1.05;margin-top:2px}
+.kpi .sub{font-size:11px;color:var(--mute)}
+.kpi.hz{border-left-color:var(--hiviz)}
+.kpi.al{border-left-color:var(--alarm)}
+.kpi.go{border-left-color:var(--go)}
+
+/* progress */
+.meter{height:8px;background:#DEE4E8;border-radius:1px;overflow:hidden;margin-top:6px}
+.meter i{display:block;height:100%;background:var(--water);transition:width .4s ease}
+.meter i.done{background:var(--go)}
+.meter i.low{background:var(--alarm)}
+
+/* board */
+.board{display:grid;grid-template-columns:repeat(6,minmax(180px,1fr));gap:10px;overflow-x:auto}
+.col{background:#E2E7EA;border:1px solid var(--line);border-radius:3px;min-height:140px;display:flex;flex-direction:column}
+.col.over{outline:2px dashed var(--water);outline-offset:-3px;background:#DDEAF0}
+.colhead{padding:8px 10px;background:var(--slab);color:#fff;font-family:'Barlow Condensed';font-size:15px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--stripe,transparent)}
+.colhead .n{font-family:'JetBrains Mono';font-size:12px;background:rgba(255,255,255,.14);padding:1px 6px;border-radius:2px}
+.colbody{padding:8px;display:flex;flex-direction:column;gap:7px;flex:1}
+.acct{background:#fff;border:1px solid var(--line);border-left:3px solid var(--line);border-radius:2px;padding:8px 9px;cursor:grab;font-size:12px}
+.acct:active{cursor:grabbing}
+.acct:hover{border-color:var(--water);box-shadow:0 1px 4px rgba(0,0,0,.10)}
+.acct .nm{font-weight:700;font-size:12.5px;line-height:1.25}
+.acct .mt{color:var(--mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+.acct .fo{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:10px}
+.acct.stale{border-left-color:var(--warn)}
+.acct.hot{border-left-color:var(--alarm)}
+.acct.fresh{border-left-color:var(--go)}
+.days{font-family:'JetBrains Mono';font-size:10px;padding:1px 5px;border-radius:2px;background:#EDF0F2;color:var(--mute)}
+.days.warn{background:#FBEBD8;color:#8C5310}
+.days.bad{background:#F7DDD8;color:#8E2C1C}
+
+.tag{display:inline-block;font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;font-weight:700;padding:2px 5px;border-radius:2px;background:#E4E9EC;color:#46545F}
+.tag.w{background:#DCEDF5;color:#0F5D7C}
+.tag.y{background:#FFF3C4;color:#7A5C00}
+.tag.r{background:#F7DDD8;color:#8E2C1C}
+.tag.g{background:#DAEEE2;color:#1E5C39}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font-family:'Barlow Condensed';font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);border-bottom:2px solid var(--line);padding:7px 8px;white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--ink)}
+td{border-bottom:1px solid #E6EAED;padding:7px 8px;vertical-align:middle}
+tr:hover td{background:#F6F8F9}
+
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.fld{display:flex;flex-direction:column;gap:3px}
+.fld label{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:var(--mute);font-weight:600}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+.modal{position:fixed;inset:0;background:rgba(14,21,28,.72);display:flex;align-items:flex-start;justify-content:center;padding:30px 16px;overflow:auto;z-index:50}
+.sheet{background:#fff;border-radius:3px;width:100%;max-width:680px;border-top:5px solid var(--hiviz)}
+.sheet h2{padding:14px 18px;border-bottom:1px solid var(--line);font-size:20px}
+.sheet .body{padding:18px;display:flex;flex-direction:column;gap:12px}
+.sheet .foot{padding:12px 18px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;background:#F6F8F9}
+.dk{background:var(--slab2);color:#DDE5EA;border-color:var(--line-d)}
+
+.tick{display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--line);border-radius:2px;background:#fff}
+.tick input{width:16px;height:16px;flex:none;accent-color:var(--go)}
+.tick .t{flex:1;font-size:12.5px}
+.tick.done{background:#F1F7F3;border-color:#BFDCC9}
+.tick.done .t{text-decoration:line-through;color:var(--mute)}
+
+.empty{padding:34px 16px;text-align:center;color:var(--mute);font-size:13px}
+.empty b{display:block;font-family:'Barlow Condensed';font-size:19px;text-transform:uppercase;color:var(--ink);margin-bottom:5px}
+.hint{font-size:11px;color:var(--mute)}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.bar input,.bar select{width:auto;min-width:130px}
+.split{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+.stat{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #EAEEF0;font-size:12.5px}
+.stat:last-child{border:none}
+.stat b{font-family:'JetBrains Mono';font-size:12.5px}
+.funnel{display:flex;flex-direction:column;gap:5px}
+.fstep{display:flex;align-items:center;gap:8px}
+.fbar{height:24px;background:var(--water);display:flex;align-items:center;padding:0 8px;color:#fff;font-family:'JetBrains Mono';font-size:11px;font-weight:700;min-width:26px;border-radius:1px}
+.flab{width:88px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);font-weight:600;text-align:right;flex:none}
+/* playbook */
+.reader{display:grid;grid-template-columns:250px 1fr;gap:14px;align-items:start}
+.toc{background:#fff;border:1px solid var(--line);border-radius:3px;padding:12px;position:sticky;top:14px;max-height:calc(100vh - 30px);overflow:auto}
+.tocgrp{margin-bottom:12px}
+.tochead{font-family:'Barlow Condensed';font-size:12px;text-transform:uppercase;letter-spacing:.13em;color:var(--mute);font-weight:600;padding:4px 6px;border-bottom:1px solid var(--line);margin-bottom:4px}
+.tocitem{display:block;width:100%;text-align:left;background:none;border:none;border-left:3px solid transparent;padding:6px 8px;font-size:12.5px;color:#3C4A55;border-radius:0 2px 2px 0;line-height:1.35}
+.tocitem:hover{background:#F1F4F6;color:var(--ink)}
+.tocitem.on{background:#EAF2F6;border-left-color:var(--hiviz);color:var(--ink);font-weight:600}
+.tocg{display:block;font-size:10px;color:var(--mute);text-transform:uppercase;letter-spacing:.07em;margin-top:1px}
+
+.prose{font-size:14px;line-height:1.65;color:#26313A;max-width:74ch}
+.prose p{margin:0 0 12px}
+.prose ul,.prose ol{margin:0 0 14px;padding-left:22px}
+.prose li{margin-bottom:6px}
+.prose b{color:var(--ink)}
+.prose table{margin:4px 0 16px;border:1px solid var(--line)}
+.prose th{background:#F3F6F7;cursor:default;padding:8px 10px}
+.prose td{padding:8px 10px;font-size:13px;line-height:1.5;vertical-align:top}
+.prose blockquote{margin:0 0 14px;padding:12px 16px;background:#F4F7F9;border-left:4px solid var(--water);font-size:14.5px;line-height:1.6}
+.prose .note{background:#FFF9DE;border-left:4px solid var(--hiviz);padding:10px 14px;font-size:13px;margin:0 0 14px}
+.prose .script{background:#F1F4F6;border:1px dashed #A9B6C0;border-radius:3px;padding:14px 16px 30px;margin:0 0 16px;cursor:copy;position:relative;transition:background .15s}
+.prose .script:hover{background:#E9EFF3;border-color:var(--water)}
+.prose .script p{margin:0 0 10px;font-size:14px}
+.prose .script p:last-child{margin:0}
+.prose .script:after{content:'Click to copy';position:absolute;bottom:8px;right:12px;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--mute);font-weight:600}
+.prose .script:hover:after{color:var(--water)}
+.pager{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid var(--line);background:#F6F8F9}
+.pager .btn{color:var(--ink);background:#fff;border-color:var(--line)}
+.pager .btn.pri{background:var(--hiviz);border-color:var(--hiviz)}
+.copied{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--go)}
+.plink{background:none;border:none;color:var(--water);font-size:11.5px;font-weight:600;padding:0;text-decoration:underline;text-underline-offset:2px}
+.plink:hover{color:var(--ink)}
+
+
+/* data mining */
+.dmbar{display:flex;gap:5px;width:100%}
+.dmseg{flex:1;display:flex;flex-direction:column;gap:2px;align-items:center}
+.dmtrk{width:100%;height:6px;background:#DEE4E8;border-radius:1px;overflow:hidden}
+.dmtrk i{display:block;height:100%;transition:width .35s ease}
+.dmlab{font-family:'JetBrains Mono';font-size:8.5px;color:var(--mute);letter-spacing:.04em}
+.acctblk{border:1px solid var(--line);border-radius:3px;margin-bottom:12px;overflow:hidden}
+.acctblk-h{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:10px 12px;background:#F3F6F7;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.blist{display:flex;flex-direction:column}
+.brow{display:flex;align-items:center;gap:12px;padding:9px 12px;border-bottom:1px solid #EDF0F2;cursor:pointer}
+.brow:last-child{border-bottom:none}
+.brow:hover{background:#F6F9FA}
+.dmsum{border:1px solid var(--line);border-radius:3px;padding:12px;background:#F6F8F9}
+
+.sheet.wide{max-width:880px}
+.sheet h2{display:flex;align-items:center;gap:6px}
+.stagetabs{display:flex;border-bottom:1px solid var(--line);background:#F3F6F7}
+.stagetabs button{flex:1;background:none;border:none;border-bottom:3px solid transparent;padding:9px 10px;text-align:left;display:flex;flex-direction:column;gap:1px;position:relative}
+.stagetabs button:hover{background:#EAEFF2}
+.stagetabs button.on{background:#fff;border-bottom-color:var(--hiviz)}
+.stagetabs .sn{font-family:'Barlow Condensed';font-size:11px;text-transform:uppercase;letter-spacing:.11em;color:var(--mute);font-weight:600}
+.stagetabs .stt{font-size:12.5px;font-weight:600;color:var(--ink);line-height:1.25}
+.stagetabs .spc{position:absolute;top:8px;right:10px;font-family:'JetBrains Mono';font-size:10px;font-weight:700;color:var(--mute)}
+.stagetabs .spc.ok{color:var(--go)}
+.secth{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:18px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--line)}
+.secth:first-child{margin-top:0}
+.rowcard{border:1px solid var(--line);border-left:3px solid var(--water);border-radius:2px;padding:10px;margin-bottom:8px;background:#FBFCFC}
+.chk{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer}
+.chk input{width:15px;height:15px;accent-color:var(--go)}
+.ord{width:22px;height:22px;flex:none;background:var(--ink);color:var(--hiviz);font-family:'JetBrains Mono';font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border-radius:2px;margin-bottom:7px}
+.note{background:#FFF9DE;border-left:4px solid var(--hiviz);padding:9px 13px;font-size:12.5px;line-height:1.5}
+
+
+/* auth + splash */
+.splash{min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:30px}
+.splash p{color:var(--mute);font-size:13px}
+.gatecard{background:#fff;border:1px solid var(--line);border-top:5px solid var(--hiviz);border-radius:3px;padding:28px;max-width:380px;width:100%;text-align:center}
+.gateerr{background:#FDF1EF;border-left:4px solid var(--alarm);padding:12px 14px;text-align:left;margin:16px 0;font-size:12.5px;line-height:1.55}
+.gateerr b{display:block;margin-bottom:4px;font-size:13px}
+.gateerr p{margin:0;color:#6B4038}
+
+/* photos */
+.photos{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.thumb{position:relative;width:64px;height:64px;border:1px solid var(--line);border-radius:2px;overflow:hidden;background:#E6EAED;flex:none}
+.thumb img{width:100%;height:100%;object-fit:cover;cursor:zoom-in;display:block}
+.thumbload{width:100%;height:100%;background:linear-gradient(90deg,#E6EAED 25%,#F2F5F6 50%,#E6EAED 75%);background-size:200% 100%;animation:sh 1.2s infinite}
+@keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.thumbx{position:absolute;top:1px;right:1px;width:17px;height:17px;line-height:15px;border:none;border-radius:2px;background:rgba(14,21,28,.72);color:#fff;font-size:13px;padding:0}
+.thumbx:hover{background:var(--alarm)}
+.shot{display:flex;align-items:center;justify-content:center;width:64px;height:64px;border:1.5px dashed #9FADB8;border-radius:2px;cursor:pointer;flex:none;background:#F6F8F9;text-align:center}
+.shot:hover{border-color:var(--water);background:#EAF2F6}
+.shot input{display:none}
+.shot span{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);line-height:1.25;padding:0 4px}
+.shot:hover span{color:var(--water)}
+.shot.busy{opacity:.6;cursor:wait}
+.lightbox{position:fixed;inset:0;background:rgba(14,21,28,.9);display:flex;align-items:center;justify-content:center;z-index:80;padding:24px;cursor:zoom-out}
+.lightbox img{max-width:100%;max-height:100%;border-radius:3px}
+
+@media(max-width:900px){.reader{grid-template-columns:1fr}.toc{position:static;max-height:none}.stagetabs{overflow-x:auto}.stagetabs button{min-width:150px}.sheet.wide{max-width:100%}.brow{flex-wrap:wrap}.split{grid-template-columns:1fr}.board{grid-template-columns:repeat(6,minmax(165px,1fr))}.f3,.f2{grid-template-columns:1fr}}
+@media print{header.top,nav.tabs,.btn,.bar{display:none!important}#root{background:#fff}}
+</style>
+
+<script type="text/babel">
+const {useState,useEffect,useMemo,useRef} = React;
+
+/* ---------------- persistence ---------------- */
+/* All reads and writes go through Store (js/store.js). In local mode it
+   writes to this browser; with Supabase configured it writes to Postgres
+   and everyone on the team sees the same board. */
+
+/* ---------------- model ---------------- */
+const STAGES=[
+  {id:'lead',    name:'Lead',      c:'#6B7A87', def:'On the list. Little or no contact.'},
+  {id:'prospect',name:'Prospect',  c:'#1E7FA6', def:'Two-way contact. No meeting booked yet.'},
+  {id:'opp',     name:'Opportunity',c:'#0F5D7C',def:'Met face to face. Signable in 100 days.'},
+  {id:'verbal',  name:'Verbal',    c:'#D98324', def:'Committed in principle. Nothing signed.'},
+  {id:'priority',name:'Priority',  c:'#2E7D4F', def:'Signed. One of 2–3 they call.'},
+  {id:'vip',     name:'VIP',       c:'#FFD400', def:'Signed. The only call. Plan on file.'},
+];
+const stageIx=id=>STAGES.findIndex(s=>s.id===id);
+const VERTICALS=['Commercial Property Mgmt','HOA / Condo Mgmt','Multifamily / Apartments','Medical & Assisted Living','Hospitality / Restaurant','Plumbing Partner','Insurance / Adjuster','General Contractor','School / Church / Municipal','Real Estate / Broker','Other'];
+const MARKETS=['San Francisco','Petaluma / North Bay','Walnut Creek / East Bay','San Jose / South Bay'];
+const NEXT_ACTION={lead:'Call to reach the decision-maker',prospect:'Book the first meeting',opp:'Deliver the presentation to decision-makers',verbal:'Get the agreement signed',priority:'Schedule the walkthrough / build the plan',vip:'Book the next site visit or lunch & learn'};
+// cadence: max days between touches before it goes stale
+const CADENCE={lead:21,prospect:14,opp:10,verbal:7,priority:45,vip:30};
+
+const WEEKLY=[
+  {id:'dials',   lab:'Dials',                 goal:100},
+  {id:'convos',  lab:'Decision-maker convos', goal:20},
+  {id:'booked',  lab:'Meetings booked',       goal:10},
+  {id:'held',    lab:'Meetings held',         goal:5},
+  {id:'dop',     lab:'Drop-off packages',     goal:10},
+  {id:'pres',    lab:'Presentations',         goal:2},
+  {id:'walk',    lab:'Walkthrough stages',    goal:2},
+];
+
+const RITUAL=[
+  {d:'Monday',    t:'7:30a BD huddle — numbers, movement, stale accounts, one skill block'},
+  {d:'Tuesday',   t:'FIELD DAY — one market only. Meetings, presentations, drop-offs'},
+  {d:'Wednesday', t:'BLOCK DAY — 8a–12p dials and email. Door closed'},
+  {d:'Thursday',  t:'FIELD DAY — second market. Walkthroughs and lunch & learns'},
+  {d:'Friday',    t:'2:00p close the week — log everything, next week 70% booked'},
+];
+
+const DM=[
+ {id:'s1',n:'Stage 1',t:'Orientation walk',d:'Building profile + every shutoff located, tagged and photographed.'},
+ {id:'s2',n:'Stage 2',t:'Systems & documentation',d:'Floor plans, risers, mechanical rooms, sprinkler zones, access.'},
+ {id:'s3',n:'Stage 3',t:'Contact tree & authorization',d:'Escalation ladder, dollar thresholds, pre-signed work authorization.'},
+ {id:'s4',n:'Stage 4',t:'Vulnerability analysis',d:'What is most likely to fail here, what it would cost, delivered in writing.'},
+];
+const SYSTEMS=['Domestic water — main','Domestic water — floor/riser','Gas — main','Electrical — main','Electrical — panel','Sprinkler — main / OS&Y','Fire pump','Boiler / hot water','HVAC / chiller','Sump / ejector pump','Irrigation'];
+const BTYPES=['Office','Retail','Multifamily','Condo / HOA','Medical / dental','Assisted living','Hotel','Restaurant','Warehouse / industrial','Mixed use','School','Church','Municipal'];
+const ROLES=['Property manager','Assistant manager','Building engineer','Maintenance tech','On-site super','Owner / asset manager','Board president','Security','After-hours answering service'];
+const VENDORS=['Plumber','Electrician','HVAC','Fire / sprinkler','Elevator','Alarm / monitoring','Insurance carrier','Insurance agent','Indoor environmental pro (IEP)'];
+const SEV=['Low','Moderate','High','Critical'];
+const newBldg=()=>({id:uid(),name:'',address:'',btype:BTYPES[0],year:'',sf:'',floors:'',units:'',occupancy:'',construction:'',sprinklered:'',alarm:'',sitePhotos:[],
+  shutoffs:[],access:{keys:'',codes:'',afterHours:'',elevator:'',dock:'',parking:''},
+  docs:{floorplans:false,risers:false,mech:false,roof:false,sprinklerZones:false,photos:false},
+  contacts:[],vendors:[],vulns:[],losses:'',auth:{signed:false,threshold:'',signer:''},delivered:false,notes:''});
+
+/* completeness scoring — drives the stage badges everywhere */
+function dmScore(b){
+  const has=v=>!!(v&&String(v).trim());
+  const s1=[has(b.name),has(b.address),has(b.btype),has(b.sf)||has(b.floors),b.shutoffs.length>0,
+            b.shutoffs.length>0&&b.shutoffs.every(x=>x.tagged),
+            b.shutoffs.length>0&&b.shutoffs.every(x=>(x.photos||[]).length>0),
+            b.shutoffs.some(x=>/water/i.test(x.system))];
+  const s2=[b.docs.floorplans,b.docs.risers,b.docs.mech,b.docs.sprinklerZones,b.docs.photos,
+            has(b.access.keys)||has(b.access.codes),has(b.access.afterHours)];
+  const s3=[b.contacts.length>=2,b.contacts.some(c=>/engineer|maintenance|super/i.test(c.role)),
+            b.contacts.some(c=>has(c.afterHours)),b.vendors.length>=2,
+            b.auth.signed,has(b.auth.threshold)];
+  const s4=[b.vulns.length>0,b.vulns.some(v=>v.sev==='High'||v.sev==='Critical')||b.vulns.length>=3,
+            b.vulns.every(v=>has(v.fix)),has(b.losses),b.delivered];
+  const p=a=>Math.round(a.filter(Boolean).length/a.length*100);
+  const st={s1:p(s1),s2:p(s2),s3:p(s3),s4:p(s4)};
+  st.all=Math.round((st.s1+st.s2+st.s3+st.s4)/4);
+  return st;
+}
+const acctScore=a=>{const B=a.bldgs||[];if(!B.length)return {all:0,s1:0,s2:0,s3:0,s4:0,n:0};
+  const S=B.map(dmScore);const avg=k=>Math.round(S.reduce((n,x)=>n+x[k],0)/S.length);
+  return {all:avg('all'),s1:avg('s1'),s2:avg('s2'),s3:avg('s3'),s4:avg('s4'),n:B.length};};
+
+/* ---------------- playbook: the handbook, in the tool ---------------- */
+const PLAY=[
+ {g:'Foundation',items:[
+  {id:'p-position',t:'What we actually sell',k:'Positioning',h:`
+<p><b>We do not sell water extraction.</b> We sell downtime avoidance and predictable recovery to people whose careers get damaged when a building goes down.</p>
+<p>Every conversation runs on three buyer fears:</p>
+<table><thead><tr><th>Fear</th><th>What they lose</th><th>What we sell</th></tr></thead><tbody>
+<tr><td>"It'll take forever to get someone here."</td><td>Hours of flooding, tenant fury</td><td>A guaranteed response window, 24/7/365</td></tr>
+<tr><td>"I'll get blamed and it'll be a mess."</td><td>Their reputation with ownership</td><td>A documented, defensible process</td></tr>
+<tr><td>"The bill will be a surprise and insurance will fight it."</td><td>Budget, capital reserves</td><td>Xactimate-standard, carrier-ready documentation</td></tr>
+</tbody></table>
+<blockquote>"We're a restoration contractor, but what property managers actually hire us for is a plan. We build a written emergency response plan for your building <i>before</i> anything happens — shutoffs, contacts, floor plans, escalation — so when something does, we're already inside the door instead of in the parking lot asking questions."</blockquote>
+<p class="note">Memorize that. It is the whole pitch.</p>`},
+  {id:'p-icp',t:'Who we chase — and who we walk away from',k:'ICP',h:`
+<p><b>Tier 1 — highest lifetime value, pursue hardest</b></p>
+<ol>
+<li><b>Commercial property management firms</b> — portfolios of 5+ buildings</li>
+<li><b>HOA / condo management</b> — high leak frequency, board-driven, extremely sticky</li>
+<li><b>Multifamily owners &amp; regional REITs</b></li>
+<li><b>Medical, dental, surgical, assisted living</b> — downtime is catastrophic, premium pricing tolerated</li>
+<li><b>Hospitality &amp; restaurant groups</b> — 24/7 pain, immediate revenue loss</li>
+</ol>
+<p><b>Tier 2 — volume and velocity</b></p>
+<ol start="6">
+<li><b>Plumbing companies</b> — the single best referral channel we have. They are physically inside the building at the moment of loss.</li>
+<li>Insurance agents, independent adjusters, TPAs</li>
+<li>General contractors, facilities and janitorial vendors</li>
+<li>Schools, churches, municipalities — slow procurement, but they never leave</li>
+<li>Real estate brokers and property inspectors</li>
+</ol>
+<p><b>Disqualify fast:</b></p>
+<ul>
+<li>Single-family owner-occupied, uninsured, price-shopping on the phone</li>
+<li>"Just give me a per-square-foot number" with no site visit</li>
+<li>Portfolios entirely outside the four markets</li>
+</ul>
+<p class="note">Independence rule, say it out loud in meetings: ARC does not remediate what NIET clears, and NIET does not clear what ARC remediated. The independence <i>is</i> the product.</p>`},
+  {id:'p-ladder',t:'The account ladder',k:'Definitions',h:`
+<p>Nobody advances an account on vibes. These are the same definitions the board uses.</p>
+<table><thead><tr><th>Stage</th><th>Definition</th><th>Exit criteria</th></tr></thead><tbody>
+<tr><td><b>Lead</b></td><td>Name on the target list. Little or no contact.</td><td>Verified decision-maker + live phone or email</td></tr>
+<tr><td><b>Prospect</b></td><td>Two-way contact made. Deal likely within 6 months. No meeting yet.</td><td>A meeting is on the calendar</td></tr>
+<tr><td><b>Opportunity</b></td><td>At least one face-to-face. Realistically signable in 100 days.</td><td>Presentation delivered to the decision-maker</td></tr>
+<tr><td><b>Verbal</b></td><td>Committed in principle. Letter or email on file. Nothing signed.</td><td>Signed ARP agreement</td></tr>
+<tr><td><b>Priority</b></td><td>Signed. We're one of 2–3 they call.</td><td>Response plan built, walkthrough complete</td></tr>
+<tr><td><b>VIP</b></td><td>Signed. The <i>only</i> call. Shutoffs tagged, access documented.</td><td>Maintain — annual review</td></tr>
+</tbody></table>
+<p class="note">The only score that matters is how many accounts move <i>up one rung</i> per month. Not activity. Movement.</p>`},
+ ]},
+ {g:'The 90-day gameplan',items:[
+  {id:'p-phase0',t:'Week 0 — load the gun',k:'Before any calling',h:`
+<ul>
+<li>Build the <b>Master Target List</b>: 300 named accounts across the four markets.</li>
+<li>Enrich the top 100 with decision-maker name, direct line, email.</li>
+<li>Confirm NAP everywhere — phone <b>(415) 529-5637</b>, address, hours. Google, HubSpot, site, collateral all match.</li>
+<li>Build the sales kit (see <i>The sales kit</i>).</li>
+<li>Configure HubSpot lifecycle stages to mirror the ladder. CallRail number per campaign.</li>
+<li>Put the service promise in writing. One sentence. Printed.</li>
+</ul>
+<p><b>Where the 300 names come from:</b> IREM and BOMA member directories · CAI chapter rosters for HOA managers · county assessor commercial parcels · CoStar/LoopNet manager listings · Google and Yelp for plumbing companies by market · <b>ARC's own past job history</b> (past customers are targets) · Allied Rental's existing rental customers.</p>`},
+  {id:'p-phase1',t:'Days 1–30 — contact and calendar',k:'Phase 1',h:`
+<p><b>Goal: 40 first meetings booked. Nothing else counts this month.</b></p>
+<p>Weekly quota per rep: 100 dials · 50 personalized emails · 10 in-person drop-offs · <b>10 meetings booked</b> · 5 meetings held.</p>
+<p><b>The 14-day sequence per target:</b></p>
+<table><thead><tr><th>Day</th><th>Touch</th><th>Channel</th></tr></thead><tbody>
+<tr><td>1</td><td>Intro call — do not pitch, ask for the meeting</td><td>Phone</td></tr>
+<tr><td>1</td><td>Value email + Emergency Prep one-pager</td><td>Email</td></tr>
+<tr><td>3</td><td>Connection request with a note</td><td>LinkedIn</td></tr>
+<tr><td>5</td><td>Second call, different time of day</td><td>Phone</td></tr>
+<tr><td>8</td><td><b>Drop-off package</b> — walk in, hand it over, get a name</td><td>In person</td></tr>
+<tr><td>10</td><td>"I stopped by" email referencing the drop-off</td><td>Email</td></tr>
+<tr><td>14</td><td>Break-up call: "Should I close your file or check back in Q3?"</td><td>Phone</td></tr>
+</tbody></table>
+<p>No response after day 14 → nurture list. Do not burn them.</p>`},
+  {id:'p-phase2',t:'Days 31–60 — present and propose',k:'Phase 2',h:`
+<p><b>Goal: 25 presentations delivered, 10 verbals.</b></p>
+<p>Every presentation ends in one of three outcomes — never "I'll send you something":</p>
+<ol>
+<li>A signed ARP agreement</li>
+<li>A scheduled <b>walkthrough</b> (this is the real close)</li>
+<li>A written "no, and here's why" — which is fine, it frees the calendar</li>
+</ol>`},
+  {id:'p-phase3',t:'Days 61–90 — sign and embed',k:'Phase 3',h:`
+<p><b>Goal: 12 signed clients, 8 walkthroughs completed, 3 lunch-and-learns booked.</b></p>
+<p>A signature is not the finish line. <b>An account is not real until the walkthrough is done and the response plan exists.</b> Unwalked signed accounts churn at roughly the same rate as prospects.</p>`},
+  {id:'p-rhythm',t:'The weekly rhythm',k:'Non-negotiable',h:`
+<p>The gameplan fails without the rhythm. Identical every week.</p>
+<ul>
+<li><b>Monday 7:30a, 45 min — BD huddle.</b> Numbers vs. quota. Every account that moved a rung. Every stale account, assigned or killed. This week's booked meetings, by name, out loud. 15 minutes on one objection or one script.</li>
+<li><b>Tuesday — FIELD DAY.</b> One market only. Never bounce between SF and Walnut Creek in an afternoon.</li>
+<li><b>Wednesday — BLOCK DAY.</b> 8a–12p dials and email. Door closed.</li>
+<li><b>Thursday — FIELD DAY.</b> Second market. Walkthroughs, lunch-and-learns.</li>
+<li><b>Friday 2:00p, 60 min — close the week.</b> Log everything. Next week must be <b>70% booked before you leave</b>.</li>
+</ul>
+<p><b>Monthly:</b> pipeline deep-dive — anything that's been an Opportunity for 120 days gets demoted. Be honest.<br/>
+<b>Quarterly:</b> association calendar locked (BOMA, IREM, CAI, chamber), lunch-and-learns scheduled, VIP value reviews.</p>`},
+ ]},
+ {g:'The field playbook',items:[
+  {id:'p-phone',t:'The phone',k:'Script',h:`
+<p><b>The only goal of a cold call is the meeting.</b> Not education. Not a quote. The meeting.</p>
+<div class="script" data-copy="Hi [Name], this is [You] with Allied Restoration in Petaluma. Quick reason for the call — we build emergency response plans for commercial properties, so when there's a flood or a fire, we already have your shutoffs, your floor plans, and your contact tree before we roll a truck.
+
+I'm not calling to sell you anything today. I'm working with a few other property management firms in [market] and I'd like 20 minutes to show you what the plan looks like, and you can decide if it's useful.
+
+Do you have anything Tuesday morning, or is later in the week better?">
+<p>Hi [Name], this is [You] with Allied Restoration in Petaluma. Quick reason for the call — we build emergency response plans for commercial properties, so when there's a flood or a fire, we already have your shutoffs, your floor plans, and your contact tree before we roll a truck.</p>
+<p>I'm not calling to sell you anything today. I'm working with a few other [property managers / HOA managers] in [market] and I'd like 20 minutes to show you what the plan looks like, and you can decide if it's useful.</p>
+<p>Do you have anything Tuesday morning, or is later in the week better?</p>
+</div>
+<p><b>Rules:</b></p>
+<ul>
+<li>Never ask "how are you today?" — it announces a sales call.</li>
+<li>Never say "just following up." Give a reason for every call.</li>
+<li>Alternative-choice close only. Never "would you like to meet?" — always "Tuesday or Thursday?"</li>
+<li>If they say <i>send information</i>: <b>"Happy to. What specifically would make it worth your time to read? I'd rather send one page that matters than a brochure."</b> That often converts to a meeting.</li>
+</ul>`},
+  {id:'p-obj',t:'Objections',k:'Acknowledge → Isolate → Reframe → Re-ask',h:`
+<table><thead><tr><th>They say</th><th>You say</th></tr></thead><tbody>
+<tr><td>"We already have a restoration company."</td><td>"Good — you should. Most of my clients did too. I'm not asking you to fire anyone. I'm asking to be the <i>second</i> number, because on the day it happens the first one is usually already on three other jobs. Do you have a written plan on file with them, or just a phone number?"</td></tr>
+<tr><td>"Send me some info."</td><td>"Sure. One question so I send the right thing — is your bigger risk aging supply lines, or tenant-caused water losses?" <i>(then re-ask for the meeting)</i></td></tr>
+<tr><td>"Not in the budget."</td><td>"There's no budget line for this — the plan is free. We only get paid when there's a loss, and then it's the carrier paying. The only thing this costs you is 20 minutes."</td></tr>
+<tr><td>"Too busy right now."</td><td>"Understood — that's exactly the problem. Everybody builds the plan <i>after</i> the flood, at 2am, when they're the busiest they'll ever be. That's why I only need 20 minutes now."</td></tr>
+<tr><td>"I need board approval." <i>(HOA)</i></td><td>"Makes sense. Would it help if I presented at your next board meeting? Fifteen minutes, and boards usually like that the plan itself doesn't cost anything."</td></tr>
+<tr><td>"Just give me your rates."</td><td>"I'll give you the rate sheet — we bill Xactimate, same as your carrier, so there are no surprises. But price is the wrong question. The question is who shows up in 60 minutes at 2am. Can I show you how we do that?"</td></tr>
+</tbody></table>`},
+  {id:'p-meet1',t:'The first meeting — the 12 questions',k:'Diagnose, do not pitch',h:`
+<p><b>Eighty percent of the first meeting is you asking questions.</b> If you talked more than they did, you lost. Bring these on paper and take notes visibly — it flatters them and builds the file.</p>
+<ol>
+<li>How many properties do you manage, and where?</li>
+<li>What's the mix — commercial, multifamily, HOA, medical?</li>
+<li>Tell me about the last water or fire loss you dealt with. Walk me through the day.</li>
+<li>What went wrong in that process? What would you have changed?</li>
+<li>Who do you call first when a building floods at 2am — a name, or a number?</li>
+<li>How long did it take them to get on site, honestly?</li>
+<li>Do you have a written emergency response plan? Can you show it to me?</li>
+<li>Do your on-site staff know where the main shutoffs are — right now, without looking?</li>
+<li>Who signs the work authorization, and what's your dollar threshold?</li>
+<li>Who's your carrier, and have claims been disputed on documentation?</li>
+<li>What does ownership hold you accountable for when a building goes down?</li>
+<li>If we did nothing else, what would make me valuable to you in the next 90 days?</li>
+</ol>
+<p class="note">Never leave without: the next meeting on the calendar, the names of everyone else who decides, and the buildings list.</p>`},
+  {id:'p-present',t:'The presentation meeting',k:'25 minutes, hard stop',h:`
+<p><b>Decision-makers present, or reschedule.</b> A presentation to someone who has to "run it up" is a rehearsal, not a meeting.</p>
+<ol>
+<li><b>Play back their pain</b> (3 min) — quote their own words from meeting one. This is the whole game.</li>
+<li><b>The three fears</b> (2 min) — response, blame, cost.</li>
+<li><b>The Allied Response Plan</b> (8 min) — what we build, what it costs them (nothing), what it does at 2am.</li>
+<li><b>Proof</b> (5 min) — a real job. Real timeline, real photos, real Xactimate estimate, real outcome.</li>
+<li><b>The independence story</b> (2 min) — ARC remediates, NIET tests, never both on one building.</li>
+<li><b>The ask</b> (5 min) — "Let's get you set up as a Priority client and schedule the walkthrough. What does Thursday look like?"</li>
+</ol>
+<p class="note">Never present price before the plan. Never email the deck before you present it.</p>`},
+  {id:'p-dop',t:'The drop-off package',k:'Highest ROI per hour after the walkthrough',h:`
+<p>Walk in. Hand it to the person at the desk. Say:</p>
+<div class="script" data-copy="Hi — I'm not here to sell anything and I don't have an appointment. I'm just dropping this off for [Name]. It's an emergency prep guide for the building. Could I get your name, so I know who I gave it to?">
+<p>"Hi — I'm not here to sell anything, and I don't have an appointment. I'm just dropping this off for [Name]. It's an emergency prep guide for the building. Could I get your name, so I know who I gave it to?"</p>
+</div>
+<p>Now you have a name, a face, and a reason to call.</p>
+<p><b>Contents:</b> Emergency Prep one-pager · a physical shutoff tag (it gets kept) · business card · a handwritten note — actually handwritten · one case study.</p>`},
+ ]},
+ {g:'The Allied Response Plan',items:[
+  {id:'p-arp',t:'What the ARP is, and why it wins',k:'Our product',h:`
+<p>A free, written, building-specific emergency response plan that lives in our dispatch system and in their hands.</p>
+<p><b>Contents:</b></p>
+<ul>
+<li>Building profile — age, systems, construction type, square footage, occupancy</li>
+<li>Water, gas and electrical shutoffs — <b>photographed and physically tagged</b></li>
+<li>Floor plans, riser diagrams, roof access, elevator keys</li>
+<li>Contact tree — who calls whom, at what dollar threshold, at what hour</li>
+<li>Access protocol — keys, codes, badges, after-hours security</li>
+<li>Their vendors — plumber, electrician, IEP, carrier, agent</li>
+<li>Pre-signed work authorization up to an agreed threshold</li>
+<li>Known vulnerabilities and prior loss history</li>
+<li>Our response commitment, in writing</li>
+</ul>
+<p><b>Why it wins:</b></p>
+<ul>
+<li>It costs the client <b>zero dollars</b> — which kills the number-one objection outright.</li>
+<li>Building it puts us <b>inside their buildings</b>, meeting their staff. That's the real value.</li>
+<li>It creates switching cost. Nobody rebuilds a 40-building response plan to save 4% on an invoice.</li>
+<li>It converts the sale from vendor selection into partnership — a different, shorter decision.</li>
+</ul>`},
+  {id:'p-walk',t:'The walkthrough is the actual close',k:'Four stages',h:`
+<p>The signature gets you access. <b>The walkthrough gets you the job.</b></p>
+<p><b>Stage 1 — Orientation walk</b> (60–90 min per building). Tour with facilities staff. Photograph and tag every shutoff. Note access. Meet the building engineer — <i>the engineer is the person who actually calls you at 2am, not the manager who signed.</i> Buy the engineer coffee. Give the engineer your cell.</p>
+<p><b>Stage 2 — Systems &amp; documentation.</b> Floor plans, risers, mechanical rooms, sprinkler zones. Everything photographed into Encircle.</p>
+<p><b>Stage 3 — Contact tree &amp; authorization.</b> Build the escalation ladder. Get the pre-signed work authorization. Set the dollar thresholds.</p>
+<p><b>Stage 4 — Vulnerability analysis.</b> Deliver a written assessment: what is most likely to fail here, and what it would cost. Present it to the manager <i>and</i> to ownership if you can get in the room. This document sells the next three buildings.</p>
+<p class="note">If a client won't allow a walkthrough, they are <b>Verbal</b>, not Priority. Don't fool yourself. Keep asking — tie it to a lunch-and-learn: "I'll bring lunch for the site staff and we'll do the walk after."</p>`},
+ ]},
+ {g:'After the win',items:[
+  {id:'p-am',t:'Account management cadence',k:'Keep it',h:`
+<p>Most restoration companies win an account and then vanish until there's a loss. That's how you lose it.</p>
+<table><thead><tr><th>Tier</th><th>Touch every</th><th>Annual requirements</th></tr></thead><tbody>
+<tr><td><b>VIP</b></td><td>30 days</td><td>2 site visits, 1 lunch &amp; learn, annual plan review, holiday touch, quarterly value report</td></tr>
+<tr><td><b>Priority</b></td><td>45 days</td><td>1 site visit, 1 lunch &amp; learn, annual plan review</td></tr>
+<tr><td><b>Verbal</b></td><td>60 days</td><td>Convert to Priority — that's the job</td></tr>
+<tr><td><b>Dormant</b> (no work in 12 mo)</td><td>90 days</td><td>Reactivation campaign</td></tr>
+</tbody></table>
+<p class="note">Any VIP untouched for 45 days goes red on the board and gets raised at Monday huddle. No exceptions.</p>`},
+  {id:'p-lunch',t:'Lunch & learns',k:'Best retention weapon we have',h:`
+<p>Free lunch for their staff, 30 minutes of genuinely useful training. You get a room full of the people who actually find the leaks.</p>
+<p><b>Topics that get accepted:</b></p>
+<ul>
+<li>The first 60 minutes of a water loss — what to do before we arrive</li>
+<li>How to shut off water in your building without flooding the floor below</li>
+<li>Mold: what's actually a hazard, and what's a tenant complaint</li>
+<li>Reading a moisture map — what your restoration contractor should be showing you</li>
+<li>Building envelope failures — where water actually gets in</li>
+<li>Wildfire smoke and IAQ — what carriers will and won't cover</li>
+<li>What your carrier requires for documentation, and how contractors get you denied</li>
+</ul>
+<p>Always end by installing shutoff tags on the spot, and asking one survey question: <b>"What's the building you worry about most?"</b> That answer is your next job.</p>`},
+  {id:'p-value',t:'The quarterly value report',k:'VIP + Priority',h:`
+<p>One page, sent to the manager <i>and</i> to their boss:</p>
+<ul>
+<li>Jobs handled this quarter, response times actually achieved</li>
+<li>Total mitigated · billed to carrier vs. out of pocket</li>
+<li><b>Losses avoided</b> — near-misses their staff caught because the plan existed</li>
+<li>Recommendations for next quarter</li>
+</ul>
+<p>This is the document that keeps the account and gets you referred internally.</p>`},
+ ]},
+ {g:'Templates',items:[
+  {id:'p-emails',t:'Email templates',k:'Copy and send',h:`
+<p><b>First touch — property management</b></p>
+<div class="script" data-copy="Subject: Emergency plan for [Property]
+
+[Name] —
+
+Most water losses in buildings like [Property] get worse in the first hour — not because of the leak, but because nobody on site can find the shutoff.
+
+We build free written emergency response plans for commercial properties in [Market]: shutoff locations tagged and photographed, floor plans, contact tree, pre-authorization. It sits in our dispatch system, so when you call at 2am we already know your building.
+
+There's no cost and nothing to approve. Twenty minutes to show you what it looks like.
+
+Tuesday morning, or is later in the week better?
+
+[Rep] — Allied Restoration Company · (415) 529-5637 · 24/7/365">
+<p><b>Subject:</b> Emergency plan for [Property]</p>
+<p>[Name] —</p>
+<p>Most water losses in buildings like [Property] get worse in the first hour — not because of the leak, but because nobody on site can find the shutoff.</p>
+<p>We build free written emergency response plans for commercial properties in [Market]: shutoff locations tagged and photographed, floor plans, contact tree, pre-authorization. It sits in our dispatch system, so when you call at 2am we already know your building.</p>
+<p>There's no cost and nothing to approve. Twenty minutes to show you what it looks like.</p>
+<p>Tuesday morning, or is later in the week better?</p>
+<p>[Rep] — Allied Restoration Company · (415) 529-5637 · 24/7/365</p>
+</div>
+<p><b>Plumbing referral partner</b></p>
+<div class="script" data-copy="Subject: Referral partnership — [Plumbing Co] + Allied Restoration
+
+[Name] —
+
+You're in the building at the exact moment the loss happens. We're the people who dry it out. Right now your customers are probably googling 'water damage' at 11pm and getting a national call center.
+
+We'd like to be your restoration partner: we respond 24/7, we never quote plumbing work, we send the customer back to you for the repair, and we make you look good on the documentation with the carrier. We refer plumbing work back — we don't compete with you.
+
+Fifteen minutes at your shop, whenever's slow?">
+<p><b>Subject:</b> Referral partnership — [Plumbing Co] + Allied Restoration</p>
+<p>[Name] —</p>
+<p>You're in the building at the exact moment the loss happens. We're the people who dry it out. Right now your customers are probably googling "water damage" at 11pm and getting a national call center.</p>
+<p>We'd like to be your restoration partner: we respond 24/7, we never quote plumbing work, we send the customer back to you for the repair, and we make you look good on the documentation with the carrier. We refer plumbing work back — we don't compete with you.</p>
+<p>Fifteen minutes at your shop, whenever's slow?</p>
+</div>
+<p><b>Post drop-off</b></p>
+<div class="script" data-copy="Subject: Left something with [Front desk name]
+
+[Name] — I stopped by your office Tuesday and left an emergency prep guide with [Name] at the front desk. Worth two minutes even if we never work together — the shutoff section is the part most buildings get wrong.
+
+If it's useful, I'd like to build the full plan for [Property]. Free, twenty minutes. Worth a conversation?">
+<p><b>Subject:</b> Left something with [Front desk name]</p>
+<p>[Name] — I stopped by your office Tuesday and left an emergency prep guide with [Name] at the front desk. Worth two minutes even if we never work together — the shutoff section is the part most buildings get wrong.</p>
+<p>If it's useful, I'd like to build the full plan for [Property]. Free, twenty minutes. Worth a conversation?</p>
+</div>
+<p><b>HOA board</b></p>
+<div class="script" data-copy="Subject: 15 minutes at your next board meeting
+
+[Name] — HOAs get hit hardest by water losses because the shutoffs are shared and nobody knows who owns what. We build free written response plans for associations, and boards generally like that it costs nothing and reduces their exposure.
+
+Could I get fifteen minutes on your next agenda? I'll bring a sample plan for a property like [Association].">
+<p><b>Subject:</b> 15 minutes at your next board meeting</p>
+<p>[Name] — HOAs get hit hardest by water losses because the shutoffs are shared and nobody knows who owns what. We build free written response plans for associations, and boards generally like that it costs nothing and reduces their exposure.</p>
+<p>Could I get fifteen minutes on your next agenda? I'll bring a sample plan for a property like [Association].</p>
+</div>
+<p><b>Break-up</b></p>
+<div class="script" data-copy="Subject: Close your file?
+
+[Name] — I've reached out a few times and haven't heard back, which usually means the timing's wrong. Totally fine.
+
+Should I close your file, or check back next quarter? Either answer works — I just don't want to keep landing in your inbox if it isn't useful.">
+<p><b>Subject:</b> Close your file?</p>
+<p>[Name] — I've reached out a few times and haven't heard back, which usually means the timing's wrong. Totally fine.</p>
+<p>Should I close your file, or check back next quarter? Either answer works — I just don't want to keep landing in your inbox if it isn't useful.</p>
+</div>`},
+  {id:'p-kit',t:'The sales kit & meeting prep',k:'What is in the bag',h:`
+<p><b>Every rep carries, physically:</b></p>
+<ol>
+<li>Company one-pager — who we are, four markets, the 24/7 promise, license number</li>
+<li><b>Emergency Prep guide</b> — the leave-behind they actually keep</li>
+<li>A real ARP sample plan, redacted</li>
+<li>Three case studies: a water loss, a fire, a mold job — real timelines, real outcomes</li>
+<li>Rate sheet and Xactimate explainer</li>
+<li>Certifications — IICRC (WRT / FSRT / AMRT), license, certificate of insurance</li>
+<li><b>Shutoff tags</b> — give them away. They get installed and never come down.</li>
+<li>Allied Rental catalog — a second product for the same buyer</li>
+<li>Sample vulnerability assessment</li>
+<li>Business cards and handwritten note cards</li>
+</ol>
+<p><b>Before every meeting:</b></p>
+<ul>
+<li>Portfolio researched — count, type, locations, age</li>
+<li>Decision-maker <i>and</i> influencers identified by name</li>
+<li>Prior loss history checked — news, permits, our own job history</li>
+<li>Two specific, non-generic observations about <i>their</i> buildings</li>
+<li>Kit in the bag, shutoff tags in the bag</li>
+<li>The specific ask defined: what am I asking for at the end of this?</li>
+<li>Calendar open, ready to book the next step on the spot</li>
+</ul>`},
+  {id:'p-kpi',t:'Scoreboard & management',k:'How this gets run',h:`
+<p><b>Leading, weekly — the rep controls these completely:</b> 100 dials · 20 decision-maker conversations · 10 meetings booked · 5 held · 10 drop-offs · 2 presentations · 2 walkthrough stages.</p>
+<p><b>Lagging, monthly:</b> 4 agreements signed · 15 stage advancements · 4 new referral partners · revenue from BD-sourced accounts · cost per acquired account · VIP retention above 90%.</p>
+<p><b>The management rule:</b> manage <i>activity</i> weekly, <i>movement</i> monthly, <i>revenue</i> quarterly.</p>
+<ul>
+<li>Great activity, zero movement → a <b>skill</b> problem. Coach the presentation.</li>
+<li>Movement, no revenue → a <b>targeting</b> problem. Fix the ICP.</li>
+<li>Neither → a <b>will</b> problem. That's a different conversation.</li>
+</ul>
+<p><b>Comp, in principle:</b> a real base (commercial cycles run six months — straight commission only attracts people who need a check this month, and they'll chase residential) + a monthly activity bonus + a flat signing bonus paid <i>on completed walkthrough</i>, not signature + a residual on gross profit for as long as they own the account. The residual is what makes account management happen instead of hunt-and-abandon.</p>
+<p class="note">One rep cannot cover SF, Petaluma, Walnut Creek and San Jose. Windshield time will eat 40% of the week. Split by market, or by vertical — never both at once.</p>`},
+ ]},
+];
+const PLAY_FLAT=PLAY.flatMap(g=>g.items.map(i=>({...i,g:g.g})));
+const STAGE_HELP={lead:'p-phase1',prospect:'p-phone',opp:'p-present',verbal:'p-arp',priority:'p-walk',vip:'p-am'};
+
+const today=()=>new Date().toISOString().slice(0,10);
+const daysSince=d=>d?Math.floor((new Date(today())-new Date(d))/864e5):999;
+const weekKey=(dt=new Date())=>{const d=new Date(dt);const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.toISOString().slice(0,10);};
+const fmtWeek=k=>{const d=new Date(k+'T00:00:00');const e=new Date(d);e.setDate(e.getDate()+4);const m=x=>x.toLocaleDateString('en-US',{month:'short',day:'numeric'});return `${m(d)} – ${m(e)}`;};
+const uid=()=>Math.random().toString(36).slice(2,9);
+
+const SEED=[
+  {id:uid(),name:'Bayline Property Group',vertical:'Commercial Property Mgmt',market:'San Francisco',contact:'Dana Ruiz',title:'Director of Facilities',phone:'(415) 555-0142',email:'druiz@bayline.example',stage:'opp',doors:14,last:'',next:'',notes:'14 buildings SOMA + Mission. Had a sprinkler discharge in Feb, unhappy with response time.',bldgs:[],created:today()},
+  {id:uid(),name:'Sonoma Ridge HOA Management',vertical:'HOA / Condo Mgmt',market:'Petaluma / North Bay',contact:'Marcus Lee',title:'Community Manager',phone:'(707) 555-0193',email:'mlee@sonomaridge.example',stage:'verbal',doors:9,last:'',next:'',notes:'Wants a 15-min slot at the next board meeting. Shared shutoffs — classic HOA exposure.',bldgs:[],created:today()},
+  {id:uid(),name:'Delta Plumbing & Rooter',vertical:'Plumbing Partner',market:'Walnut Creek / East Bay',contact:'Ray Ortiz',title:'Owner',phone:'(925) 555-0117',email:'ray@deltaplumb.example',stage:'prospect',doors:0,last:'',next:'',notes:'6 trucks. Currently sending losses to a national call center. Wants plumbing referrals back.',bldgs:[],created:today()},
+];
+
+/* ---------------- app ---------------- */
+function App(){
+  const [db,setDb]=useState(null);
+  const [tab,setTab]=useState('board');
+  const [edit,setEdit]=useState(null);
+  const [ready,setReady]=useState(false);
+  const [jump,setJump]=useState(null);
+  const [gate,setGate]=useState(null);   // 'signin' | Error | null
+  const go=id=>{setEdit(null);setJump(id);setTab('play');window.scrollTo(0,0);};
+
+  const normalize=base=>{
+    const B=newBldg();
+    base.accts=(base.accts||[]).map(a=>({...a,bldgs:(a.bldgs||[]).map(b=>({...B,...b,
+      access:{...B.access,...(b.access||{})},docs:{...B.docs,...(b.docs||{})},auth:{...B.auth,...(b.auth||{})},
+      shutoffs:(b.shutoffs||[]).map(x=>({photos:[],...x})),
+      contacts:b.contacts||[],vendors:b.vendors||[],vulns:b.vulns||[]}))}));
+    base.weeks=base.weeks||{};
+    return base;
+  };
+
+  useEffect(()=>{ (async()=>{
+    try{
+      const {signedIn}=await Store.init();
+      if(!signedIn){ setGate('signin'); setReady(true); return; }
+      const d=await Store.loadAll();
+      setDb(normalize(d|| {accts:Store.isRemote?[]:SEED,weeks:{}} ));
+    }catch(err){ setGate(err); }
+    setReady(true);
+  })(); },[]);
+
+  if(!ready) return <Splash msg="Loading the board…"/>;
+  if(gate) return <Gate g={gate}/>;
+  if(!db)  return <Splash msg="Loading the board…"/>;
+
+  const A=db.accts;
+  const persist=next=>{ setDb(next); Store.saveLocal(next); };
+
+  const upsert=a=>{
+    persist({...db, accts: A.some(x=>x.id===a.id)? A.map(x=>x.id===a.id?a:x) : [a,...A]});
+    Store.saveAccount(a);
+  };
+  const remove=id=>{ persist({...db, accts:A.filter(x=>x.id!==id)}); Store.deleteAccount(id); };
+  const move=(id,stage)=>{ const a=A.find(x=>x.id===id); if(a) upsert({...a,stage,last:today()}); };
+  const touch=id=>{ const a=A.find(x=>x.id===id); if(a) upsert({...a,last:today()}); };
+
+  const wk=weekKey();
+  const wdata=db.weeks[wk]||{};
+  const bump=(k,n)=>{
+    const w={...(db.weeks[wk]||{})};
+    w[k]=Math.max(0,(w[k]||0)+n);
+    const next={...db,weeks:{...db.weeks,[wk]:w}};
+    persist(next);
+    Store.saveWeek(wk,w);
+  };
+
+  const exportJSON=()=>{
+    const b=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`team-allied-bd-${today()}.json`;a.click();
+  };
+  const exportCSV=()=>{
+    const cols=['name','vertical','market','contact','title','phone','email','stage','doors','last','next','notes'];
+    const esc=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+    const csv=[cols.join(','),...A.map(a=>cols.map(c=>esc(a[c])).join(','))].join('\n');
+    const b=new Blob([csv],{type:'text/csv'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`team-allied-accounts-${today()}.csv`;a.click();
+  };
+  const importJSON=e=>{
+    const f=e.target.files[0];if(!f)return;
+    const r=new FileReader();
+    r.onload=()=>{try{
+      const d=normalize(JSON.parse(r.result));
+      if(!d.accts) throw 0;
+      if(Store.isRemote && !confirm(`Import ${d.accts.length} accounts into the shared board? Accounts with the same ID will be overwritten.`)) return;
+      persist(d);
+      if(Store.isRemote) d.accts.forEach(a=>Store.saveAccount(a));
+    }catch(err){alert('That file did not parse. Export a fresh backup and try again.');}};
+    r.readAsText(f);e.target.value='';
+  };
+
+  const u=Store.user();
+
+  return <>
+    <div className="hazard"/>
+    <header className="top">
+      <div>
+        <div className="brand">Team <b>Allied</b> — BD Command Center</div>
+        <div className="tagline">
+          {Store.isRemote
+            ? <>Shared board · signed in as {u?.email}</>
+            : <>Standalone mode · this browser only</>}
+        </div>
+      </div>
+      <div className="top-right">
+        <button className="btn gh" onClick={exportCSV}>Export CSV</button>
+        <button className="btn gh" onClick={exportJSON}>Back up</button>
+        <label className="btn gh" style={{margin:0}}>Restore<input type="file" accept=".json" onChange={importJSON} style={{display:'none'}}/></label>
+        {Store.isRemote && <button className="btn gh" onClick={()=>Store.signOut()}>Sign out</button>}
+        <button className="btn pri" onClick={()=>setEdit({id:uid(),name:'',vertical:VERTICALS[0],market:MARKETS[0],contact:'',title:'',phone:'',email:'',stage:'lead',doors:0,last:'',next:'',notes:'',bldgs:[],created:today()})}>+ Add account</button>
+      </div>
+    </header>
+
+    <nav className="tabs">
+      {[['board','Response board'],['week','This week'],['accounts','Accounts'],['today',"Today's calls"],['mine','Data mining'],['plan','Gameplan'],['play','Playbook']].map(([k,l])=>
+        <button key={k} className={tab===k?'on':''} onClick={()=>setTab(k)}>{l}</button>)}
+    </nav>
+
+    <main>
+      {tab==='board'    && <Board A={A} move={move} onOpen={setEdit} go={go}/>}
+      {tab==='week'     && <Week A={A} wk={wk} w={wdata} bump={bump} weeks={db.weeks} go={go}/>}
+      {tab==='accounts' && <Accounts A={A} onOpen={setEdit} remove={remove} touch={touch}/>}
+      {tab==='today'    && <CallSheet A={A} touch={touch} onOpen={setEdit} go={go}/>}
+      {tab==='mine'     && <Mining A={A} onSave={upsert} go={go}/>}
+      {tab==='plan'     && <Plan A={A} go={go}/>}
+      {tab==='play'     && <Playbook jump={jump} clear={()=>setJump(null)}/>}
+    </main>
+
+    {edit && <Editor a={edit} onSave={a=>{upsert(a);setEdit(null);}} onClose={()=>setEdit(null)} onDelete={id=>{remove(id);setEdit(null);}}
+      onGoMine={a=>{upsert(a);setEdit(null);setTab('mine');window.scrollTo(0,0);}}/>}
+  </>;
+}
+
+function Splash({msg}){
+  return <><div className="hazard"/><div className="splash"><div className="brand" style={{color:'#0E151C'}}>Team <b style={{color:'#B99A00'}}>Allied</b></div><p>{msg}</p></div></>;
+}
+
+function Gate({g}){
+  const [busy,setBusy]=useState(false);
+  const err = g!=='signin' ? g : null;
+  return <><div className="hazard"/><div className="splash">
+    <div className="gatecard">
+      <div className="brand" style={{color:'#0E151C',fontSize:30}}>Team <b style={{color:'#B99A00'}}>Allied</b></div>
+      <div className="tagline" style={{color:'#6B7A87'}}>BD Command Center</div>
+      {err ? <>
+        <div className="gateerr">
+          <b>{err.notMember ? 'Not on the members list' : 'Could not connect'}</b>
+          <p>{err.message}</p>
+        </div>
+        <button className="btn" onClick={()=>Store.signOut()}>Sign in as someone else</button>
+      </> : <>
+        <p style={{fontSize:13,color:'#46545F',lineHeight:1.55,margin:'14px 0 18px'}}>
+          Sign in with your Team Allied Google account. Accounts, response plans and shutoff photos are shared across the team.
+        </p>
+        <button className="btn pri" style={{width:'100%',padding:'11px'}} disabled={busy}
+          onClick={async()=>{setBusy(true);try{await Store.signIn();}catch(e){alert(e.message);setBusy(false);}}}>
+          {busy?'Opening Google…':'Sign in with Google'}
+        </button>
+        <p className="hint" style={{marginTop:14}}>Your email has to be on the members list. If it isn't, ask Michael to add it.</p>
+      </>}
+    </div>
+  </div></>;
+}
+
+/* ---------------- board ---------------- */
+function Board({A,move,onOpen,go}){
+  const [over,setOver]=useState(null);
+  const stale=a=>daysSince(a.last)>CADENCE[a.stage];
+  const counts=STAGES.map(s=>A.filter(a=>a.stage===s.id).length);
+  const staleN=A.filter(stale).length;
+
+  return <div className="grid">
+    <div className="kpis">
+      <Kpi lab="Accounts" val={A.length} sub="in the system"/>
+      <Kpi lab="Opportunities (A)" val={counts[2]} sub="signable in 100 days" cls="hz"/>
+      <Kpi lab="Signed clients" val={counts[4]+counts[5]} sub={`${counts[5]} VIP · ${counts[4]} Priority`} cls="go"/>
+      <Kpi lab="Past cadence" val={staleN} sub="need a touch now" cls={staleN?'al':''}/>
+    </div>
+
+    <div className="card">
+      <h3>Response board <span className="hint" style={{fontWeight:400,textTransform:'none',letterSpacing:0,fontFamily:'Inter'}}>— drag an account to move it a rung. Click to open.</span></h3>
+      <div className="body">
+        <div className="board">
+          {STAGES.map(s=>{
+            const list=A.filter(a=>a.stage===s.id);
+            return <div key={s.id}
+              className={'col'+(over===s.id?' over':'')}
+              onDragOver={e=>{e.preventDefault();setOver(s.id);}}
+              onDragLeave={()=>setOver(o=>o===s.id?null:o)}
+              onDrop={e=>{e.preventDefault();setOver(null);const id=e.dataTransfer.getData('id');if(id)move(id,s.id);}}>
+              <div className="colhead" style={{'--stripe':s.c,borderBottomColor:s.c}}>
+                <span>{s.name}</span><span className="n">{list.length}</span>
+              </div>
+              <div className="colbody">
+                {list.map(a=>{
+                  const d=daysSince(a.last);
+                  const over_=d>CADENCE[a.stage];
+                  const cls=!a.last?'':over_?(d>CADENCE[a.stage]*2?'hot':'stale'):'fresh';
+                  return <div key={a.id} className={'acct '+cls} draggable
+                    onDragStart={e=>e.dataTransfer.setData('id',a.id)}
+                    onClick={()=>onOpen(a)}>
+                    <div className="nm">{a.name}</div>
+                    <div className="mt">{a.market.split(' /')[0]}{a.doors>0?` · ${a.doors} bldgs`:''}</div>
+                    <div className="fo">
+                      <span className="tag">{a.vertical.split(' ')[0]}</span>
+                      <span className={'days '+(!a.last?'':over_?(d>CADENCE[a.stage]*2?'bad':'warn'):'')}>{a.last?`${d}d`:'new'}</span>
+                    </div>
+                  </div>;
+                })}
+                {!list.length && <div style={{fontSize:11,color:'#8494A0',padding:'10px 4px',lineHeight:1.4}}>{s.def}</div>}
+                <button className="plink" style={{marginTop:'auto',paddingTop:6,textAlign:'left'}} onClick={()=>go(STAGE_HELP[s.id])}>What to do at this stage →</button>
+              </div>
+            </div>;
+          })}
+        </div>
+        <div className="hint" style={{marginTop:10}}>
+          Cadence before an account goes stale — Lead 21d · Prospect 14d · Opportunity 10d · Verbal 7d · Priority 45d · VIP 30d.
+          <b style={{color:'var(--alarm)'}}> Red</b> = more than double the cadence. Movement up a rung is the only score that counts.{' '}
+          <button className="plink" onClick={()=>go('p-ladder')}>Read the stage definitions →</button>
+        </div>
+      </div>
+    </div>
+  </div>;
+}
+
+/* ---------------- week ---------------- */
+function Week({A,wk,w,bump,weeks,go}){
+  const pct=k=>{const g=WEEKLY.find(x=>x.id===k).goal;return Math.min(100,Math.round(((w[k]||0)/g)*100));};
+  const total=WEEKLY.reduce((s,k)=>s+Math.min(1,(w[k.id]||0)/k.goal),0)/WEEKLY.length*100;
+  const prev=Object.keys(weeks).filter(k=>k<wk).sort().slice(-4).reverse();
+
+  return <div className="grid">
+    <div className="split">
+      <div className="card">
+        <h3>Week of {fmtWeek(wk)} — leading activity</h3>
+        <div className="body grid" style={{gap:10}}>
+          {WEEKLY.map(k=>{
+            const v=w[k.id]||0,p=pct(k.id);
+            return <div key={k.id}>
+              <div className="row" style={{justifyContent:'space-between'}}>
+                <div style={{fontWeight:600,fontSize:13}}>{k.lab}</div>
+                <div className="row" style={{gap:6}}>
+                  <span className="mono" style={{fontSize:13,fontWeight:700}}>{v}<span style={{color:'var(--mute)',fontWeight:400}}>/{k.goal}</span></span>
+                  <button className="btn sm" onClick={()=>bump(k.id,-1)}>–</button>
+                  <button className="btn sm pri" onClick={()=>bump(k.id,1)}>+</button>
+                </div>
+              </div>
+              <div className="meter"><i className={p>=100?'done':p<40?'low':''} style={{width:p+'%'}}/></div>
+            </div>;
+          })}
+          <div style={{borderTop:'1px solid var(--line)',paddingTop:10,marginTop:2}}>
+            <div className="row" style={{justifyContent:'space-between'}}>
+              <b className="disp" style={{fontSize:17}}>Week complete</b>
+              <span className="mono" style={{fontWeight:700}}>{Math.round(total)}%</span>
+            </div>
+            <div className="meter" style={{height:12}}><i className={total>=100?'done':total<40?'low':''} style={{width:total+'%'}}/></div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid" style={{alignContent:'start'}}>
+        <div className="card">
+          <h3>The rhythm <button className="plink" style={{marginLeft:'auto',fontFamily:'Inter'}} onClick={()=>go('p-rhythm')}>Why →</button></h3>
+          <div className="body grid" style={{gap:7}}>
+            {RITUAL.map(r=><div key={r.d} style={{fontSize:12,lineHeight:1.45}}>
+              <b className="disp" style={{fontSize:14,color:'var(--water)'}}>{r.d}</b><br/>{r.t}
+            </div>)}
+          </div>
+        </div>
+        {prev.length>0 && <div className="card">
+          <h3>Prior weeks</h3>
+          <div className="body">
+            {prev.map(k=>{
+              const p=Math.round(WEEKLY.reduce((s,x)=>s+Math.min(1,((weeks[k]||{})[x.id]||0)/x.goal),0)/WEEKLY.length*100);
+              return <div key={k} className="stat"><span>{fmtWeek(k)}</span><b style={{color:p>=100?'var(--go)':p<40?'var(--alarm)':'var(--ink)'}}>{p}%</b></div>;
+            })}
+          </div>
+        </div>}
+      </div>
+    </div>
+  </div>;
+}
+
+/* ---------------- accounts ---------------- */
+function Accounts({A,onOpen,remove,touch}){
+  const [q,setQ]=useState(''),[st,setSt]=useState(''),[mk,setMk]=useState(''),[vt,setVt]=useState(''),[sort,setSort]=useState('last');
+  const list=useMemo(()=>{
+    let L=A.filter(a=>
+      (!q||`${a.name} ${a.contact} ${a.notes} ${a.email}`.toLowerCase().includes(q.toLowerCase()))&&
+      (!st||a.stage===st)&&(!mk||a.market===mk)&&(!vt||a.vertical===vt));
+    L.sort((a,b)=>{
+      if(sort==='last') return daysSince(b.last)-daysSince(a.last);
+      if(sort==='stage')return stageIx(b.stage)-stageIx(a.stage);
+      if(sort==='doors')return (b.doors||0)-(a.doors||0);
+      return a.name.localeCompare(b.name);
+    });
+    return L;
+  },[A,q,st,mk,vt,sort]);
+
+  return <div className="card">
+    <h3>Accounts <span className="mono" style={{fontSize:12,color:'var(--mute)'}}>{list.length}</span></h3>
+    <div className="body">
+      <div className="bar">
+        <input placeholder="Search name, contact, notes…" value={q} onChange={e=>setQ(e.target.value)} style={{minWidth:220}}/>
+        <select value={st} onChange={e=>setSt(e.target.value)}><option value="">All stages</option>{STAGES.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select>
+        <select value={mk} onChange={e=>setMk(e.target.value)}><option value="">All markets</option>{MARKETS.map(m=><option key={m}>{m}</option>)}</select>
+        <select value={vt} onChange={e=>setVt(e.target.value)}><option value="">All verticals</option>{VERTICALS.map(v=><option key={v}>{v}</option>)}</select>
+      </div>
+      {!list.length ? <div className="empty"><b>No accounts match</b>Clear a filter, or add the account you just talked to.</div> :
+      <div style={{overflowX:'auto'}}>
+      <table>
+        <thead><tr>
+          <th onClick={()=>setSort('name')}>Company</th><th>Contact</th><th onClick={()=>setSort('stage')}>Stage</th>
+          <th>Market</th><th onClick={()=>setSort('doors')}>Bldgs</th><th onClick={()=>setSort('last')}>Last touch</th><th>Next action</th><th></th>
+        </tr></thead>
+        <tbody>
+          {list.map(a=>{
+            const d=daysSince(a.last),ov=d>CADENCE[a.stage],s=STAGES[stageIx(a.stage)];
+            return <tr key={a.id}>
+              <td><b style={{cursor:'pointer'}} onClick={()=>onOpen(a)}>{a.name}</b><div className="hint">{a.vertical}</div></td>
+              <td>{a.contact||<span className="hint">—</span>}<div className="hint">{a.phone}</div></td>
+              <td><span className="tag" style={{background:s.c,color:s.id==='vip'?'#0E151C':'#fff'}}>{s.name}</span></td>
+              <td style={{fontSize:11.5}}>{a.market}</td>
+              <td className="mono">{a.doors||'—'}</td>
+              <td><span className={'days '+(!a.last?'':ov?(d>CADENCE[a.stage]*2?'bad':'warn'):'')}>{a.last?`${d}d ago`:'never'}</span></td>
+              <td style={{fontSize:11.5,maxWidth:210}}>{a.next||<span className="hint">{NEXT_ACTION[a.stage]}</span>}</td>
+              <td><div className="row" style={{gap:5,flexWrap:'nowrap'}}>
+                <button className="btn sm" onClick={()=>touch(a.id)}>Log touch</button>
+                <button className="btn sm dang" onClick={()=>{if(confirm(`Delete ${a.name}? This can't be undone.`))remove(a.id);}}>Del</button>
+              </div></td>
+            </tr>;
+          })}
+        </tbody>
+      </table></div>}
+    </div>
+  </div>;
+}
+
+/* ---------------- call sheet ---------------- */
+function CallSheet({A,touch,onOpen,go}){
+  const list=useMemo(()=>{
+    return A.map(a=>{
+      const d=daysSince(a.last),cad=CADENCE[a.stage];
+      // score: how overdue, weighted by how far up the ladder + portfolio size
+      const score=(d/cad)*(1+stageIx(a.stage)*0.35)+Math.min(2,(a.doors||0)/10);
+      return {...a,d,over:d-cad,score};
+    }).filter(a=>a.d>=CADENCE[a.stage]).sort((x,y)=>y.score-x.score).slice(0,12);
+  },[A]);
+
+  return <div className="card">
+    <h3>Today's call sheet — {new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</h3>
+    <div className="body">
+      {!list.length ? <div className="empty"><b>Nothing is overdue</b>Every account is inside its cadence. Go book meetings — or add more targets to the board.</div> : <>
+      <div className="hint" style={{marginBottom:10}}>Ranked by how far past cadence they are, weighted by stage and portfolio size. Work top to bottom. Print this page for the truck.{' '}
+        <button className="plink" onClick={()=>go('p-phone')}>The call script →</button>{' · '}
+        <button className="plink" onClick={()=>go('p-obj')}>Objections →</button>{' · '}
+        <button className="plink" onClick={()=>go('p-emails')}>Email templates →</button>
+      </div>
+      <div style={{overflowX:'auto'}}>
+      <table>
+        <thead><tr><th>#</th><th>Company</th><th>Who</th><th>Phone</th><th>Overdue</th><th>Purpose of this call</th><th></th></tr></thead>
+        <tbody>{list.map((a,i)=>{
+          const s=STAGES[stageIx(a.stage)];
+          return <tr key={a.id}>
+            <td className="mono" style={{color:'var(--mute)'}}>{String(i+1).padStart(2,'0')}</td>
+            <td><b style={{cursor:'pointer'}} onClick={()=>onOpen(a)}>{a.name}</b><div className="hint"><span className="tag" style={{background:s.c,color:s.id==='vip'?'#0E151C':'#fff'}}>{s.name}</span> {a.market}</div></td>
+            <td>{a.contact}<div className="hint">{a.title}</div></td>
+            <td className="mono" style={{fontSize:11.5}}>{a.phone}</td>
+            <td><span className="days bad">+{a.over}d</span></td>
+            <td style={{fontSize:12,maxWidth:280}}>{a.next||NEXT_ACTION[a.stage]}</td>
+            <td><button className="btn sm pri" onClick={()=>touch(a.id)}>Called</button></td>
+          </tr>;})}
+        </tbody>
+      </table></div></>}
+    </div>
+  </div>;
+}
+
+/* ---------------- gameplan ---------------- */
+function Plan({A,go}){
+  const c=id=>A.filter(a=>a.stage===id).length;
+  const signed=c('vip')+c('priority');
+  const goals=[
+    ['Named targets in system',A.length,300],
+    ['Opportunities (A)',c('opp'),25],
+    ['Verbals',c('verbal'),15],
+    ['Signed clients',signed,12],
+    ['Response plans complete',A.filter(a=>stageIx(a.stage)>=4).flatMap(a=>a.bldgs||[]).filter(b=>dmScore(b).all===100).length,8],
+    ['Plumbing partners',A.filter(a=>a.vertical==='Plumbing Partner'&&stageIx(a.stage)>=3).length,10],
+  ];
+  const fmax=Math.max(1,...STAGES.map(s=>c(s.id)));
+  const B=A.filter(x=>stageIx(x.stage)>=4).flatMap(x=>x.bldgs||[]);
+  const plansDone=B.filter(b=>dmScore(b).all===100).length;
+  const shut=B.reduce((n,b)=>n+b.shutoffs.length,0);
+  const shutTag=B.reduce((n,b)=>n+b.shutoffs.filter(x=>x.tagged).length,0);
+
+  return <div className="grid">
+    <div className="split">
+      <div className="card">
+        <h3>90-day scoreboard</h3>
+        <div className="body grid" style={{gap:11}}>
+          {goals.map(([l,v,g])=>{const p=Math.min(100,Math.round(v/g*100));return <div key={l}>
+            <div className="row" style={{justifyContent:'space-between'}}>
+              <span style={{fontWeight:600,fontSize:13}}>{l}</span>
+              <span className="mono" style={{fontWeight:700}}>{v}<span style={{color:'var(--mute)',fontWeight:400}}>/{g}</span></span>
+            </div>
+            <div className="meter"><i className={p>=100?'done':p<35?'low':''} style={{width:p+'%'}}/></div>
+          </div>;})}
+        </div>
+      </div>
+      <div className="card">
+        <h3>Pipeline shape</h3>
+        <div className="body">
+          <div className="funnel">
+            {STAGES.map(s=>{const n=c(s.id);return <div key={s.id} className="fstep">
+              <span className="flab">{s.name}</span>
+              <div className="fbar" style={{width:Math.max(4,n/fmax*100)+'%',background:s.c,color:s.id==='vip'?'#0E151C':'#fff'}}>{n}</div>
+            </div>;})}
+          </div>
+          <div style={{marginTop:14,paddingTop:12,borderTop:'1px solid var(--line)'}}>
+            <div className="stat"><span>Response plans complete</span><b>{plansDone}/{B.length||0} buildings</b></div>
+            <div className="stat"><span>Shutoffs tagged</span><b>{shutTag}/{shut||0}</b></div>
+            <div className="stat"><span>Conversion, Opportunity → Signed</span><b>{c('opp')+signed?Math.round(signed/(c('opp')+signed)*100):0}%</b></div>
+            <div className="hint" style={{marginTop:8,lineHeight:1.45}}>An account isn't real until the walkthrough is done. Unwalked signed accounts churn like prospects.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div className="card">
+      <h3>The three phases</h3>
+      <div className="body grid" style={{gridTemplateColumns:'repeat(auto-fit,minmax(230px,1fr))'}}>
+        {[
+          ['Days 1–30','Contact & calendar','40 first meetings booked. Nothing else counts. 100 dials, 50 emails, 10 drop-offs a week. 14-day sequence per target, then nurture.','p-phase1'],
+          ['Days 31–60','Present & propose','25 presentations. Every one ends in a signature, a scheduled walkthrough, or a written no. Never "I\'ll send something over."','p-phase2'],
+          ['Days 61–90','Sign & embed','12 signed, 8 walkthroughs, 3 lunch & learns. The walkthrough is the real close — it puts you inside the building, next to the engineer who actually calls at 2am.','p-walk'],
+        ].map(([a,b,t,pid])=><div key={a} style={{borderLeft:'3px solid var(--hiviz)',paddingLeft:12}}>
+          <div className="mono" style={{fontSize:11,color:'var(--mute)',letterSpacing:'.08em'}}>{a.toUpperCase()}</div>
+          <div className="disp" style={{fontSize:19,margin:'2px 0 5px'}}>{b}</div>
+          <div style={{fontSize:12.5,lineHeight:1.5,color:'#3C4A55'}}>{t}</div>
+          <button className="plink" style={{marginTop:6}} onClick={()=>go(pid)}>Open the playbook →</button>
+        </div>)}
+      </div>
+    </div>
+  </div>;
+}
+
+/* ---------------- playbook reader ---------------- */
+function Playbook({jump,clear}){
+  const [open,setOpen]=useState(jump||'p-position');
+  const [q,setQ]=useState('');
+  const [copied,setCopied]=useState('');
+  const bodyRef=useRef(null);
+
+  useEffect(()=>{ if(jump){setOpen(jump);clear();} },[jump]);
+  useEffect(()=>{
+    const el=bodyRef.current; if(!el) return;
+    const h=e=>{
+      const s=e.target.closest('.script'); if(!s) return;
+      const txt=s.getAttribute('data-copy'); if(!txt) return;
+      navigator.clipboard?.writeText(txt).then(()=>{setCopied(open+txt.slice(0,12));setTimeout(()=>setCopied(''),1600);});
+    };
+    el.addEventListener('click',h);
+    return ()=>el.removeEventListener('click',h);
+  },[open]);
+
+  const hits=useMemo(()=>{
+    if(!q.trim()) return null;
+    const t=q.toLowerCase();
+    return PLAY_FLAT.filter(i=>(i.t+' '+i.k+' '+i.h).toLowerCase().includes(t));
+  },[q]);
+
+  const cur=PLAY_FLAT.find(i=>i.id===open)||PLAY_FLAT[0];
+  const ix=PLAY_FLAT.findIndex(i=>i.id===cur.id);
+  const prev=PLAY_FLAT[ix-1],next=PLAY_FLAT[ix+1];
+
+  return <div className="reader">
+    <aside className="toc">
+      <input placeholder="Search the playbook…" value={q} onChange={e=>setQ(e.target.value)} style={{marginBottom:10}}/>
+      {hits ? (hits.length?hits.map(i=>
+          <button key={i.id} className={'tocitem'+(open===i.id?' on':'')} onClick={()=>{setOpen(i.id);setQ('');}}>
+            {i.t}<span className="tocg">{i.g}</span></button>)
+        : <div className="hint" style={{padding:'8px 4px'}}>Nothing matches "{q}".</div>)
+      : PLAY.map(g=><div key={g.g} className="tocgrp">
+          <div className="tochead">{g.g}</div>
+          {g.items.map(i=><button key={i.id} className={'tocitem'+(open===i.id?' on':'')} onClick={()=>setOpen(i.id)}>{i.t}</button>)}
+        </div>)}
+      <div className="hint" style={{marginTop:14,paddingTop:12,borderTop:'1px solid var(--line)',lineHeight:1.5}}>
+        Grey boxes are scripts. <b>Click one to copy it.</b>
+      </div>
+    </aside>
+
+    <article className="card">
+      <h3>
+        <span style={{color:'var(--water)'}}>{cur.g}</span>
+        <span style={{color:'var(--line)'}}>/</span>
+        {cur.t}
+        <span className="tag" style={{marginLeft:'auto',fontFamily:'Inter'}}>{cur.k}</span>
+      </h3>
+      <div className="body prose" ref={bodyRef} dangerouslySetInnerHTML={{__html:cur.h}}/>
+      <div className="pager">
+        {prev? <button className="btn" onClick={()=>{setOpen(prev.id);window.scrollTo(0,0);}}>← {prev.t}</button> : <span/>}
+        {copied && <span className="copied">Copied to clipboard</span>}
+        {next? <button className="btn pri" onClick={()=>{setOpen(next.id);window.scrollTo(0,0);}}>{next.t} →</button> : <span/>}
+      </div>
+    </article>
+  </div>;
+}
+
+
+
+/* ---- photo capture: the reason any of this is on a server ---- */
+function Photos({photos=[],onChange,meta,label}){
+  const [urls,setUrls]=useState({});
+  const [busy,setBusy]=useState(false);
+  const [view,setView]=useState(null);
+
+  useEffect(()=>{ let live=true;
+    (async()=>{ const m={};
+      for(const p of photos){ const u=await Store.photoURL(p); if(u) m[p.path||p.at]=u; }
+      if(live) setUrls(m);
+    })();
+    return ()=>{live=false;};
+  },[JSON.stringify(photos.map(p=>p.path||p.at))]);
+
+  const add=async e=>{
+    const files=[...e.target.files]; e.target.value='';
+    if(!files.length) return;
+    setBusy(true);
+    const out=[...photos];
+    for(const f of files){
+      try{ out.push(await Store.uploadPhoto(f,{...meta,label})); }
+      catch(err){ alert(err.message); }
+    }
+    onChange(out); setBusy(false);
+  };
+  const del=async i=>{
+    if(!confirm('Delete this photo?')) return;
+    await Store.deletePhoto(photos[i]);
+    onChange(photos.filter((_,j)=>j!==i));
+  };
+
+  return <div className="photos">
+    {photos.map((p,i)=>{const k=p.path||p.at;const u=urls[k];
+      return <div key={k} className="thumb">
+        {u? <img src={u} alt={label} onClick={()=>setView(u)}/> : <div className="thumbload"/>}
+        <button className="thumbx" onClick={()=>del(i)} title="Delete photo">×</button>
+      </div>;})}
+    <label className={'shot'+(busy?' busy':'')}>
+      <input type="file" accept="image/*" capture="environment" multiple onChange={add} disabled={busy}/>
+      <span>{busy?'Uploading…':photos.length?'+ Photo':'Take photo'}</span>
+    </label>
+    {view && <div className="lightbox" onClick={()=>setView(null)}><img src={view} alt=""/></div>}
+  </div>;
+}
+
+/* ---------------- DATA MINING ---------------- */
+function StageBar({st,sm}){
+  return <div className="dmbar" style={sm?{gap:3}:{}}>
+    {DM.map(d=>{const v=st[d.id];return <div key={d.id} className="dmseg" title={d.n+' — '+d.t+': '+v+'%'}>
+      <div className="dmtrk"><i style={{width:v+'%',background:v===100?'var(--go)':v>0?'var(--water)':'transparent'}}/></div>
+      {!sm && <span className="dmlab">{d.n.replace('Stage ','S')}</span>}
+    </div>;})}
+  </div>;
+}
+
+function Mining({A,onSave,go}){
+  const [sel,setSel]=useState(null); // {acctId, bldgId}
+  const [q,setQ]=useState('');
+  const signed=A.filter(a=>stageIx(a.stage)>=4);
+  const rows=useMemo(()=>{
+    const R=[];
+    signed.forEach(a=>(a.bldgs||[]).forEach(b=>R.push({a,b,st:dmScore(b)})));
+    return R.filter(r=>!q||`${r.a.name} ${r.b.name} ${r.b.address}`.toLowerCase().includes(q.toLowerCase()))
+            .sort((x,y)=>x.st.all-y.st.all);
+  },[A,q]);
+
+  const addB=a=>{const b=newBldg();b.name=`Building ${(a.bldgs||[]).length+1}`;onSave({...a,bldgs:[...(a.bldgs||[]),b]});setSel({acctId:a.id,bldgId:b.id});};
+  const cur=sel&&(()=>{const a=A.find(x=>x.id===sel.acctId);const b=a&&(a.bldgs||[]).find(x=>x.id===sel.bldgId);return a&&b?{a,b}:null;})();
+
+  const tagged=rows.reduce((n,r)=>n+r.b.shutoffs.filter(s=>s.tagged).length,0);
+  const untagged=rows.reduce((n,r)=>n+r.b.shutoffs.filter(s=>!s.tagged).length,0);
+  const done=rows.filter(r=>r.st.all===100).length;
+  const crit=rows.reduce((n,r)=>n+r.b.vulns.filter(v=>v.sev==='Critical'||v.sev==='High').length,0);
+
+  if(!signed.length) return <div className="card"><div className="empty">
+    <b>No signed clients yet</b>
+    Data mining starts after the agreement. Move an account to Priority or VIP on the response board, then come back and log its buildings.
+    <div style={{marginTop:12}}><button className="btn pri" onClick={()=>go('p-walk')}>Read: the walkthrough is the actual close →</button></div>
+  </div></div>;
+
+  return <div className="grid">
+    <div className="kpis">
+      <Kpi lab="Buildings in the program" val={rows.length} sub={`${signed.length} signed clients`}/>
+      <Kpi lab="Plans complete" val={done} sub="all four stages at 100%" cls={done?'go':''}/>
+      <Kpi lab="Shutoffs tagged" val={tagged} sub={untagged?`${untagged} still untagged`:'all tagged'} cls={untagged?'hz':'go'}/>
+      <Kpi lab="High / critical risks" val={crit} sub="logged in vulnerability analysis" cls={crit?'al':''}/>
+    </div>
+
+    <div className="card">
+      <h3>Data mining — Allied Response Plans
+        <button className="plink" style={{marginLeft:'auto',fontFamily:'Inter'}} onClick={()=>go('p-walk')}>The four stages →</button>
+      </h3>
+      <div className="body">
+        <div className="bar">
+          <input placeholder="Search buildings…" value={q} onChange={e=>setQ(e.target.value)} style={{minWidth:220}}/>
+          <span className="hint">Sorted least complete first — work the top of the list.</span>
+        </div>
+
+        {signed.map(a=>{
+          const B=(a.bldgs||[]).filter(b=>!q||`${a.name} ${b.name} ${b.address}`.toLowerCase().includes(q.toLowerCase()));
+          if(q&&!B.length) return null;
+          const sc=acctScore(a);
+          return <div key={a.id} className="acctblk">
+            <div className="acctblk-h">
+              <div>
+                <b>{a.name}</b>
+                <span className="tag" style={{marginLeft:8,background:STAGES[stageIx(a.stage)].c,color:a.stage==='vip'?'#0E151C':'#fff'}}>{STAGES[stageIx(a.stage)].name}</span>
+                <div className="hint">{a.market} · {sc.n} building{sc.n===1?'':'s'} logged{a.doors>sc.n?` · ${a.doors-sc.n} still to walk`:''}</div>
+              </div>
+              <div className="row" style={{gap:10}}>
+                <div style={{minWidth:130}}><StageBar st={sc}/></div>
+                <button className="btn sm pri" onClick={()=>addB(a)}>+ Building</button>
+              </div>
+            </div>
+            {!B.length ? <div className="hint" style={{padding:'8px 12px'}}>No buildings logged yet. Add one before the orientation walk — you can fill it in on site from your phone.</div> :
+            <div className="blist">
+              {B.map(b=>{const st=dmScore(b);const un=b.shutoffs.filter(x=>!x.tagged).length;
+                return <div key={b.id} className="brow" onClick={()=>setSel({acctId:a.id,bldgId:b.id})}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:600,fontSize:13}}>{b.name||'Untitled building'}</div>
+                    <div className="hint" style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{b.address||'No address'} · {b.btype}</div>
+                  </div>
+                  <div className="row" style={{gap:5,flexWrap:'nowrap'}}>
+                    {b.shutoffs.length>0 && <span className={'tag '+(un?'y':'g')}>{b.shutoffs.length} shutoff{b.shutoffs.length===1?'':'s'}{un?` · ${un} untagged`:''}</span>}
+                    {b.vulns.some(v=>v.sev==='Critical') && <span className="tag r">Critical risk</span>}
+                    {st.all===100 && <span className="tag g">Plan complete</span>}
+                  </div>
+                  <div style={{width:120,flex:'none'}}><StageBar st={st}/></div>
+                  <span className="mono" style={{width:40,textAlign:'right',fontWeight:700,fontSize:12,color:st.all===100?'var(--go)':'var(--mute)'}}>{st.all}%</span>
+                </div>;})}
+            </div>}
+          </div>;
+        })}
+      </div>
+    </div>
+
+    {cur && <Building a={cur.a} b={cur.b} onClose={()=>setSel(null)}
+      onSave={nb=>onSave({...cur.a,bldgs:cur.a.bldgs.map(x=>x.id===nb.id?nb:x)})}
+      onDelete={()=>{onSave({...cur.a,bldgs:cur.a.bldgs.filter(x=>x.id!==cur.b.id)});setSel(null);}}/>}
+  </div>;
+}
+
+/* ---- the building record: the actual field tool ---- */
+function Building({a,b,onSave,onClose,onDelete}){
+  const [f,setF]=useState(b);
+  const [tab,setTab]=useState('s1');
+  useEffect(()=>setF(b),[b.id]);
+  const u=(k,v)=>{const nf={...f,[k]:v};setF(nf);onSave(nf);};
+  const un=(k,sub,v)=>u(k,{...f[k],[sub]:v});
+  const st=dmScore(f);
+
+  const addRow=(k,row)=>u(k,[...f[k],row]);
+  const setRow=(k,i,row)=>u(k,f[k].map((x,j)=>j===i?row:x));
+  const delRow=(k,i)=>u(k,f[k].filter((_,j)=>j!==i));
+
+  return <div className="modal" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <div className="sheet wide" onMouseDown={e=>e.stopPropagation()}>
+      <h2>
+        <span>{f.name||'New building'}</span>
+        <span className="hint" style={{fontWeight:400,marginLeft:10,textTransform:'none',letterSpacing:0,fontFamily:'Inter'}}>{a.name}</span>
+        <span className="mono" style={{marginLeft:'auto',fontSize:14,fontWeight:700,color:st.all===100?'var(--go)':'var(--water)'}}>{st.all}%</span>
+      </h2>
+
+      <div className="stagetabs">
+        {DM.map(d=><button key={d.id} className={tab===d.id?'on':''} onClick={()=>setTab(d.id)}>
+          <span className="sn">{d.n}</span>
+          <span className="stt">{d.t}</span>
+          <span className={'spc'+(st[d.id]===100?' ok':'')}>{st[d.id]}%</span>
+        </button>)}
+      </div>
+
+      <div className="body" style={{maxHeight:'62vh',overflow:'auto'}}>
+        <div className="note" style={{margin:'0 0 14px'}}>{DM.find(d=>d.id===tab).d}</div>
+
+        {tab==='s1' && <>
+          <div className="f2">
+            <div className="fld"><label>Building name</label><input value={f.name} onChange={e=>u('name',e.target.value)} placeholder="Tower A / 450 Mission"/></div>
+            <div className="fld"><label>Address</label><input value={f.address} onChange={e=>u('address',e.target.value)} placeholder="450 Mission St, San Francisco"/></div>
+          </div>
+          <div className="f3">
+            <div className="fld"><label>Type</label><select value={f.btype} onChange={e=>u('btype',e.target.value)}>{BTYPES.map(t=><option key={t}>{t}</option>)}</select></div>
+            <div className="fld"><label>Year built</label><input value={f.year} onChange={e=>u('year',e.target.value)} placeholder="1974"/></div>
+            <div className="fld"><label>Square feet</label><input value={f.sf} onChange={e=>u('sf',e.target.value)} placeholder="82,000"/></div>
+          </div>
+          <div className="f3">
+            <div className="fld"><label>Floors</label><input value={f.floors} onChange={e=>u('floors',e.target.value)} placeholder="6 + basement"/></div>
+            <div className="fld"><label>Units / suites</label><input value={f.units} onChange={e=>u('units',e.target.value)} placeholder="42"/></div>
+            <div className="fld"><label>Occupancy</label><input value={f.occupancy} onChange={e=>u('occupancy',e.target.value)} placeholder="Office, ground-floor retail"/></div>
+          </div>
+          <div className="f3">
+            <div className="fld"><label>Construction</label><input value={f.construction} onChange={e=>u('construction',e.target.value)} placeholder="Type III, wood frame over podium"/></div>
+            <div className="fld"><label>Sprinklered?</label><input value={f.sprinklered} onChange={e=>u('sprinklered',e.target.value)} placeholder="Wet, full coverage"/></div>
+            <div className="fld"><label>Alarm / monitoring</label><input value={f.alarm} onChange={e=>u('alarm',e.target.value)} placeholder="Central station — Bay Alarm"/></div>
+          </div>
+
+          <Sect t="Shutoffs" sub="Every one gets located, photographed and physically tagged. This is the single most valuable thing in the plan."
+            add={()=>addRow('shutoffs',{id:uid(),system:SYSTEMS[0],loc:'',how:'',tagged:false,photo:false,photos:[],note:''})} addLab="+ Add shutoff"/>
+          {!f.shutoffs.length && <div className="hint" style={{padding:'6px 0 12px'}}>None logged. On the orientation walk, start with the domestic water main — that's the one that matters at 2am.</div>}
+          {f.shutoffs.map((x,i)=><div key={x.id} className="rowcard">
+            <div className="f3" style={{marginBottom:8}}>
+              <div className="fld"><label>System</label><select value={x.system} onChange={e=>setRow('shutoffs',i,{...x,system:e.target.value})}>{SYSTEMS.map(y=><option key={y}>{y}</option>)}</select></div>
+              <div className="fld"><label>Where it is</label><input value={x.loc} onChange={e=>setRow('shutoffs',i,{...x,loc:e.target.value})} placeholder="Basement mech room, NE corner behind door"/></div>
+              <div className="fld"><label>How to operate</label><input value={x.how} onChange={e=>setRow('shutoffs',i,{...x,how:e.target.value})} placeholder="OS&Y wheel, 14 turns CW. Key #7."/></div>
+            </div>
+            <Photos photos={x.photos||[]} label={x.system}
+              meta={{acct:a.name,bldg:f.name}}
+              onChange={ph=>setRow('shutoffs',i,{...x,photos:ph,photo:ph.length>0})}/>
+            <div className="row" style={{justifyContent:'space-between',marginTop:8}}>
+              <label className="chk"><input type="checkbox" checked={x.tagged} onChange={e=>setRow('shutoffs',i,{...x,tagged:e.target.checked})}/> Physically tagged on site</label>
+              <button className="btn sm dang" onClick={()=>delRow('shutoffs',i)}>Remove</button>
+            </div>
+          </div>)}
+        </>}
+
+        {tab==='s2' && <>
+          <Sect t="Documentation collected"/>
+          <div className="grid" style={{gap:6,marginBottom:16}}>
+            {[['floorplans','Floor plans — every level, including basement'],['risers','Riser diagrams — water, sprinkler, electrical'],
+              ['mech','Mechanical rooms located and photographed'],['sprinklerZones','Sprinkler zones mapped to floors'],
+              ['roof','Roof access — how you get up there, who has the key']]
+              .map(([k,t])=><label key={k} className={'tick'+(f.docs[k]?' done':'')}>
+                <input type="checkbox" checked={f.docs[k]} onChange={e=>un('docs',k,e.target.checked)}/><span className="t">{t}</span></label>)}
+          </div>
+          <Sect t="Site photos" sub="Mechanical rooms, risers, roof access, the panel you'll never find again in the dark."/>
+          <Photos photos={f.sitePhotos||[]} label="site" meta={{acct:a.name,bldg:f.name}}
+            onChange={ph=>u('sitePhotos',ph)}/>
+
+          <Sect t="Access" sub="At 2am, the difference between 20 minutes and 3 hours is whether we can get in."/>
+          <div className="f2">
+            <div className="fld"><label>Keys — who has them, where is the lockbox</label><input value={f.access.keys} onChange={e=>un('access','keys',e.target.value)} placeholder="Lockbox at loading dock, code w/ dispatch"/></div>
+            <div className="fld"><label>Codes / badges</label><input value={f.access.codes} onChange={e=>un('access','codes',e.target.value)} placeholder="Gate #4412 · badge from security desk"/></div>
+          </div>
+          <div className="f2">
+            <div className="fld"><label>After-hours entry</label><input value={f.access.afterHours} onChange={e=>un('access','afterHours',e.target.value)} placeholder="Security on site 24/7, lobby desk"/></div>
+            <div className="fld"><label>Elevator / freight</label><input value={f.access.elevator} onChange={e=>un('access','elevator',e.target.value)} placeholder="Freight car #3, key required"/></div>
+          </div>
+          <div className="f2">
+            <div className="fld"><label>Loading dock</label><input value={f.access.dock} onChange={e=>un('access','dock',e.target.value)} placeholder="Rear alley, 12' clearance"/></div>
+            <div className="fld"><label>Parking for trucks & equipment</label><input value={f.access.parking} onChange={e=>un('access','parking',e.target.value)} placeholder="Two spots in garage, low clearance — box trucks street only"/></div>
+          </div>
+        </>}
+
+        {tab==='s3' && <>
+          <Sect t="Contact tree" sub="In order. Who gets called first, who authorizes, who picks up at 2am."
+            add={()=>addRow('contacts',{id:uid(),name:'',role:ROLES[0],phone:'',afterHours:'',auth:''})} addLab="+ Add contact"/>
+          {!f.contacts.length && <div className="hint" style={{padding:'6px 0 12px'}}>Empty. The building engineer is the most important entry here — not the manager who signed.</div>}
+          {f.contacts.map((x,i)=><div key={x.id} className="rowcard">
+            <div className="row" style={{gap:8,alignItems:'flex-end'}}>
+              <span className="ord">{i+1}</span>
+              <div className="fld" style={{flex:2}}><label>Name</label><input value={x.name} onChange={e=>setRow('contacts',i,{...x,name:e.target.value})}/></div>
+              <div className="fld" style={{flex:2}}><label>Role</label><select value={x.role} onChange={e=>setRow('contacts',i,{...x,role:e.target.value})}>{ROLES.map(r=><option key={r}>{r}</option>)}</select></div>
+              <div className="fld" style={{flex:1.5}}><label>Phone</label><input value={x.phone} onChange={e=>setRow('contacts',i,{...x,phone:e.target.value})}/></div>
+              <div className="fld" style={{flex:1.5}}><label>After-hours / cell</label><input value={x.afterHours} onChange={e=>setRow('contacts',i,{...x,afterHours:e.target.value})}/></div>
+              <div className="fld" style={{flex:1.5}}><label>Can authorize up to</label><input value={x.auth} onChange={e=>setRow('contacts',i,{...x,auth:e.target.value})} placeholder="$10,000"/></div>
+              <button className="btn sm dang" onClick={()=>delRow('contacts',i)}>×</button>
+            </div>
+          </div>)}
+
+          <Sect t="Their vendors" sub="We do not compete with these people. We call them and we make them look good."
+            add={()=>addRow('vendors',{id:uid(),kind:VENDORS[0],co:'',phone:''})} addLab="+ Add vendor"/>
+          {f.vendors.map((x,i)=><div key={x.id} className="rowcard">
+            <div className="row" style={{gap:8,alignItems:'flex-end'}}>
+              <div className="fld" style={{flex:1.5}}><label>Type</label><select value={x.kind} onChange={e=>setRow('vendors',i,{...x,kind:e.target.value})}>{VENDORS.map(v=><option key={v}>{v}</option>)}</select></div>
+              <div className="fld" style={{flex:2}}><label>Company</label><input value={x.co} onChange={e=>setRow('vendors',i,{...x,co:e.target.value})}/></div>
+              <div className="fld" style={{flex:1.5}}><label>Phone</label><input value={x.phone} onChange={e=>setRow('vendors',i,{...x,phone:e.target.value})}/></div>
+              <button className="btn sm dang" onClick={()=>delRow('vendors',i)}>×</button>
+            </div>
+          </div>)}
+
+          <Sect t="Pre-signed work authorization" sub="This is the piece that lets us start extracting at 2am instead of waiting for a signature at 9am."/>
+          <div className="f3">
+            <div className="fld"><label>Signed?</label>
+              <label className="tick" style={{marginTop:2}}><input type="checkbox" checked={f.auth.signed} onChange={e=>un('auth','signed',e.target.checked)}/><span className="t">On file</span></label></div>
+            <div className="fld"><label>Auto-authorized up to</label><input value={f.auth.threshold} onChange={e=>un('auth','threshold',e.target.value)} placeholder="$25,000 mitigation"/></div>
+            <div className="fld"><label>Who signed it</label><input value={f.auth.signer} onChange={e=>un('auth','signer',e.target.value)} placeholder="Dana Ruiz, Dir. of Facilities"/></div>
+          </div>
+        </>}
+
+        {tab==='s4' && <>
+          <Sect t="Vulnerability analysis" sub="What is most likely to fail here, and what it would cost them. This document sells the next three buildings."
+            add={()=>addRow('vulns',{id:uid(),system:'',risk:'',sev:'Moderate',cost:'',fix:''})} addLab="+ Add finding"/>
+          {!f.vulns.length && <div className="hint" style={{padding:'6px 0 12px'}}>Nothing logged. Walk the building looking for: original supply lines, unsupervised valves, no floor drains in mech rooms, water heaters above occupied space, dead sump pumps, roof drains that back up.</div>}
+          {f.vulns.map((x,i)=><div key={x.id} className="rowcard">
+            <div className="f3" style={{marginBottom:8}}>
+              <div className="fld"><label>System / location</label><input value={x.system} onChange={e=>setRow('vulns',i,{...x,system:e.target.value})} placeholder="4th floor water heater closet"/></div>
+              <div className="fld"><label>What could fail</label><input value={x.risk} onChange={e=>setRow('vulns',i,{...x,risk:e.target.value})} placeholder="1998 tank, no drain pan, sits above the server room"/></div>
+              <div className="fld"><label>Severity</label>
+                <select value={x.sev} onChange={e=>setRow('vulns',i,{...x,sev:e.target.value})}>{SEV.map(v=><option key={v}>{v}</option>)}</select></div>
+            </div>
+            <div className="row" style={{gap:10,alignItems:'flex-end'}}>
+              <div className="fld" style={{flex:1}}><label>Est. loss if it fails</label><input value={x.cost} onChange={e=>setRow('vulns',i,{...x,cost:e.target.value})} placeholder="$180k + 3 weeks downtime"/></div>
+              <div className="fld" style={{flex:2}}><label>Recommendation</label><input value={x.fix} onChange={e=>setRow('vulns',i,{...x,fix:e.target.value})} placeholder="Add pan + leak sensor tied to alarm. ~$1,200."/></div>
+              <button className="btn sm dang" onClick={()=>delRow('vulns',i)}>Remove</button>
+            </div>
+          </div>)}
+
+          <Sect t="Loss history"/>
+          <div className="fld"><textarea rows="3" value={f.losses} onChange={e=>u('losses',e.target.value)} placeholder="Feb 2024 — sprinkler head knocked off on 3, ~$60k, took the prior vendor 4 hours to arrive. Oct 2022 — roof drain backup."/></div>
+          <label className={'tick'+(f.delivered?' done':'')} style={{marginTop:12}}>
+            <input type="checkbox" checked={f.delivered} onChange={e=>u('delivered',e.target.checked)}/>
+            <span className="t"><b>Vulnerability analysis delivered</b> — presented to the manager, and to ownership if you could get in the room</span></label>
+        </>}
+      </div>
+
+      <div className="foot">
+        <button className="btn dang" style={{marginRight:'auto'}} onClick={()=>{if(confirm(`Delete ${f.name||'this building'}?`))onDelete();}}>Delete building</button>
+        <button className="btn" onClick={async()=>{try{await printARP(a,f);}catch(e){alert('Could not build the plan: '+e.message);}}}>Generate response plan</button>
+        <button className="btn pri" onClick={onClose}>Done</button>
+      </div>
+    </div>
+  </div>;
+}
+
+function Sect({t,sub,add,addLab}){
+  return <div className="secth">
+    <div><div className="disp" style={{fontSize:17}}>{t}</div>{sub&&<div className="hint">{sub}</div>}</div>
+    {add&&<button className="btn sm pri" onClick={add}>{addLab}</button>}
+  </div>;
+}
+
+/* ---- generate the client-facing Allied Response Plan ---- */
+async function printARP(a,b){
+  const esc=v=>String(v??'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+  const row=(k,v)=>v?`<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`:'';
+  const sev=s=>({Critical:'#C6412C',High:'#D98324',Moderate:'#1E7FA6',Low:'#6B7A87'}[s]||'#6B7A87');
+  // resolve photos to viewable URLs so the plan is useful on paper and on screen
+  const shots={};
+  for(const so of b.shutoffs){
+    const p=(so.photos||[])[0];
+    if(p){ try{ shots[so.id]=await Store.photoURL(p); }catch(e){} }
+  }
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Allied Response Plan — ${esc(b.name)}</title>
+<style>
+@page{margin:0.6in}
+body{font:12px/1.5 -apple-system,Segoe UI,Helvetica,sans-serif;color:#0E151C;margin:0}
+.haz{height:8px;background:repeating-linear-gradient(-45deg,#FFD400 0 12px,#0E151C 12px 24px)}
+header{background:#0E151C;color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:flex-end}
+h1{font:700 24px/1 'Helvetica Neue',sans-serif;text-transform:uppercase;letter-spacing:.04em;margin:0}
+h1 b{color:#FFD400}
+.sub{font-size:10px;color:#93A4B1;text-transform:uppercase;letter-spacing:.14em;margin-top:5px}
+.em{text-align:right;font-size:11px;line-height:1.6}
+.em b{font-size:17px;color:#FFD400;display:block}
+main{padding:18px 20px}
+h2{font:700 14px/1 sans-serif;text-transform:uppercase;letter-spacing:.08em;margin:20px 0 8px;padding-bottom:5px;border-bottom:2px solid #0E151C}
+h2:first-child{margin-top:0}
+table{width:100%;border-collapse:collapse;margin-bottom:6px}
+th,td{text-align:left;padding:5px 8px;border-bottom:1px solid #E0E5E8;vertical-align:top;font-size:11.5px}
+th{width:150px;color:#6B7A87;font-weight:600}
+table.g th{width:auto;background:#F2F4F5;color:#46545F;border-bottom:2px solid #CBD3DA;font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+.tag{display:inline-block;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:2px 5px;border-radius:2px;color:#fff}
+.ord{display:inline-block;width:16px;height:16px;line-height:16px;text-align:center;background:#0E151C;color:#FFD400;font-weight:700;font-size:10px;border-radius:2px}
+.warn{background:#FFF9DE;border-left:4px solid #FFD400;padding:8px 12px;font-size:11px;margin:8px 0}
+footer{margin-top:22px;padding-top:10px;border-top:1px solid #CBD3DA;font-size:10px;color:#6B7A87;display:flex;justify-content:space-between}
+.empty{color:#8494A0;font-style:italic;font-size:10px}
+img.shot{width:80px;height:60px;object-fit:cover;border:1px solid #CBD3DA;border-radius:2px;display:block}
+</style></head><body>
+<div class="haz"></div>
+<header>
+  <div><h1>Allied <b>Response Plan</b></h1><div class="sub">${esc(b.name)}${b.address?' · '+esc(b.address):''}</div></div>
+  <div class="em">24 / 7 / 365 EMERGENCY<b>(415) 529-5637</b>Allied Restoration Company</div>
+</header>
+<main>
+<div class="warn"><b>In an emergency:</b> call the number above first, then shut off the affected system using the table below. Do not wait for approval — the pre-signed authorization on this plan covers immediate mitigation${b.auth.threshold?' up to '+esc(b.auth.threshold):''}.</div>
+
+<h2>Building</h2>
+<table>
+${row('Prepared for',a.name)}${row('Type',b.btype)}${row('Year built',b.year)}${row('Square feet',b.sf)}
+${row('Floors',b.floors)}${row('Units / suites',b.units)}${row('Occupancy',b.occupancy)}${row('Construction',b.construction)}
+${row('Sprinklered',b.sprinklered)}${row('Alarm / monitoring',b.alarm)}
+</table>
+
+<h2>Emergency shutoffs</h2>
+${b.shutoffs.length?`<table class="g"><tr><th></th><th>System</th><th>Location</th><th>How to operate</th><th>Tagged</th></tr>
+${b.shutoffs.map(s=>`<tr><td style="width:88px">${shots[s.id]?`<img src="${shots[s.id]}" class="shot">`:'<span class="empty">no photo</span>'}</td><td><b>${esc(s.system)}</b></td><td>${esc(s.loc)||'—'}</td><td>${esc(s.how)||'—'}</td><td>${s.tagged?'Yes':'<b style="color:#C6412C">NO</b>'}</td></tr>`).join('')}</table>`:'<div class="empty">No shutoffs logged yet — complete Stage 1.</div>'}
+
+<h2>Contact tree</h2>
+${b.contacts.length?`<table class="g"><tr><th></th><th>Name</th><th>Role</th><th>Phone</th><th>After hours</th><th>Authorizes to</th></tr>
+${b.contacts.map((c,i)=>`<tr><td><span class="ord">${i+1}</span></td><td><b>${esc(c.name)}</b></td><td>${esc(c.role)}</td><td>${esc(c.phone)||'—'}</td><td>${esc(c.afterHours)||'—'}</td><td>${esc(c.auth)||'—'}</td></tr>`).join('')}</table>`:'<div class="empty">No contact tree yet — complete Stage 3.</div>'}
+
+<h2>Access</h2>
+<table>
+${row('Keys / lockbox',b.access.keys)}${row('Codes / badges',b.access.codes)}${row('After-hours entry',b.access.afterHours)}
+${row('Elevator / freight',b.access.elevator)}${row('Loading dock',b.access.dock)}${row('Truck parking',b.access.parking)}
+</table>
+
+${b.vendors.length?`<h2>Building vendors</h2><table class="g"><tr><th>Type</th><th>Company</th><th>Phone</th></tr>
+${b.vendors.map(v=>`<tr><td>${esc(v.kind)}</td><td>${esc(v.co)}</td><td>${esc(v.phone)}</td></tr>`).join('')}</table>`:''}
+
+${b.vulns.length?`<h2>Vulnerability analysis</h2><table class="g"><tr><th>Where</th><th>What could fail</th><th>Severity</th><th>Est. loss</th><th>Recommendation</th></tr>
+${b.vulns.map(v=>`<tr><td>${esc(v.system)}</td><td>${esc(v.risk)}</td><td><span class="tag" style="background:${sev(v.sev)}">${esc(v.sev)}</span></td><td>${esc(v.cost)||'—'}</td><td>${esc(v.fix)||'—'}</td></tr>`).join('')}</table>`:''}
+
+${b.losses?`<h2>Loss history</h2><p style="font-size:11.5px">${esc(b.losses)}</p>`:''}
+
+<h2>Authorization</h2>
+<table>
+${row('Pre-signed work authorization',b.auth.signed?'On file':'NOT ON FILE')}
+${row('Auto-authorized mitigation up to',b.auth.threshold)}
+${row('Signed by',b.auth.signer)}
+</table>
+
+<footer><span>Allied Restoration Company · 15 Copeland Street, Petaluma, CA 94952 · teamallied.co</span><span>Prepared ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</span></footer>
+</main></body></html>`;
+  const blob=new Blob([html],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement('a');
+  link.href=url; link.download=`ARP-${(b.name||'building').replace(/[^a-z0-9]+/gi,'-')}.html`;
+  link.click();
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
+}
+
+/* ---------------- editor ---------------- */
+function Editor({a,onSave,onClose,onDelete,onGoMine}){
+  const [f,setF]=useState({...a,walk:a.walk||{}});
+  const u=(k,v)=>setF(p=>({...p,[k]:v}));
+  const signed=stageIx(f.stage)>=4;
+  const save=()=>{ if(!f.name.trim()){alert('Give the account a company name.');return;} onSave(f); };
+  return <div className="modal" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <div className="sheet" onMouseDown={e=>e.stopPropagation()}>
+      <h2>{a.name||'New account'}</h2>
+      <div className="body">
+        <div className="fld"><label>Company</label><input autoFocus value={f.name} onChange={e=>u('name',e.target.value)} placeholder="Bayline Property Group"/></div>
+        <div className="f2">
+          <div className="fld"><label>Vertical</label><select value={f.vertical} onChange={e=>u('vertical',e.target.value)}>{VERTICALS.map(v=><option key={v}>{v}</option>)}</select></div>
+          <div className="fld"><label>Market</label><select value={f.market} onChange={e=>u('market',e.target.value)}>{MARKETS.map(m=><option key={m}>{m}</option>)}</select></div>
+        </div>
+        <div className="f2">
+          <div className="fld"><label>Decision-maker</label><input value={f.contact} onChange={e=>u('contact',e.target.value)} placeholder="Dana Ruiz"/></div>
+          <div className="fld"><label>Title</label><input value={f.title} onChange={e=>u('title',e.target.value)} placeholder="Director of Facilities"/></div>
+        </div>
+        <div className="f2">
+          <div className="fld"><label>Phone</label><input value={f.phone} onChange={e=>u('phone',e.target.value)} placeholder="(415) 555-0142"/></div>
+          <div className="fld"><label>Email</label><input value={f.email} onChange={e=>u('email',e.target.value)} placeholder="name@company.com"/></div>
+        </div>
+        <div className="f3">
+          <div className="fld"><label>Stage</label><select value={f.stage} onChange={e=>u('stage',e.target.value)}>{STAGES.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
+          <div className="fld"><label>Buildings</label><input type="number" min="0" value={f.doors} onChange={e=>u('doors',+e.target.value)}/></div>
+          <div className="fld"><label>Last touch</label><input type="date" value={f.last} onChange={e=>u('last',e.target.value)}/></div>
+        </div>
+        <div className="hint" style={{marginTop:-4}}>{STAGES[stageIx(f.stage)].def} Touch at least every {CADENCE[f.stage]} days.</div>
+        <div className="fld"><label>Next action</label><input value={f.next} onChange={e=>u('next',e.target.value)} placeholder={NEXT_ACTION[f.stage]}/></div>
+        <div className="fld"><label>Notes — their words, their last loss, who else decides</label>
+          <textarea rows="3" value={f.notes} onChange={e=>u('notes',e.target.value)} placeholder="Had a sprinkler discharge in February. Unhappy with the response time. Board approval needed over $10k."/></div>
+
+        {signed && <div>
+          <label style={{fontSize:10,textTransform:'uppercase',letterSpacing:'.09em',color:'var(--mute)',fontWeight:600,display:'block',marginBottom:6}}>Allied Response Plan — data mining</label>
+          {(() => {
+            const sc=acctScore(f);
+            return <div className="dmsum">
+              {sc.n ? <>
+                <div className="row" style={{justifyContent:'space-between',marginBottom:8}}>
+                  <span style={{fontSize:12.5}}><b>{sc.n}</b> building{sc.n===1?'':'s'} logged{f.doors>sc.n?<span className="hint"> · {f.doors-sc.n} still to walk</span>:''}</span>
+                  <span className="mono" style={{fontWeight:700,color:sc.all===100?'var(--go)':'var(--water)'}}>{sc.all}%</span>
+                </div>
+                <StageBar st={sc}/>
+              </> : <div className="hint" style={{marginBottom:8}}>No buildings logged. The signature got you access — the walkthrough gets you the job.</div>}
+              <button className="btn pri" style={{marginTop:10,width:'100%'}} onClick={()=>{onGoMine(f);}}>Open data mining →</button>
+            </div>;
+          })()}
+        </div>}
+      </div>
+      <div className="foot">
+        {a.name && <button className="btn dang" style={{marginRight:'auto'}} onClick={()=>{if(confirm(`Delete ${a.name}?`))onDelete(a.id);}}>Delete</button>}
+        <button className="btn dk" onClick={onClose}>Cancel</button>
+        <button className="btn pri" onClick={save}>Save account</button>
+      </div>
+    </div>
+  </div>;
+}
+
+function Kpi({lab,val,sub,cls=''}){return <div className={'kpi '+cls}><div className="lab">{lab}</div><div className="val">{val}</div><div className="sub">{sub}</div></div>;}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
